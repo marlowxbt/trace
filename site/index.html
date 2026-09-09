@@ -375,6 +375,21 @@ td.id{color:var(--txt)} td.r{text-align:right}
 .addr input{flex:1;min-width:0;background:var(--sunk);border:1px solid var(--rule2);
   border-radius:100px;padding:11px 17px;color:var(--txt);font:inherit;font-size:12.5px}
 .addr input::placeholder{color:var(--dim2)}
+.rprog{height:2px;background:var(--rule);border-radius:2px;overflow:hidden;margin:-6px 0 12px}
+.rprog i{display:block;height:100%;width:0;background:var(--lime);
+  transition:width .3s ease-out}
+/* the reader speaking about a problem, not about a result */
+.note.bad{color:var(--red)}
+.note.bad b{color:var(--red)}
+.calhead .ex.live{color:var(--txt);border-color:var(--rule2)}
+.calhead .ex.busy{color:var(--steel);border-color:rgba(95,139,150,.45)}
+.calfoot{border-top:1px solid var(--rule);padding:11px 15px;color:var(--dim2);
+  font-size:10.5px;line-height:1.5;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.calfoot b{color:var(--dim)}
+.calfoot button{margin-left:auto;border:1px solid var(--rule2);border-radius:100px;
+  padding:3px 11px;color:var(--dim);font-size:9.5px;letter-spacing:.11em;
+  text-transform:uppercase;white-space:nowrap}
+.calfoot button:hover{color:var(--txt);border-color:var(--dim2)}
 .addr input:focus{outline:0;border-color:var(--lime)}
 .note{color:var(--dim2);font-size:11.5px}
 
@@ -738,8 +753,9 @@ footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;disp
           <input id="addr" placeholder="0x…" aria-label="Wallet address" spellcheck="false">
           <button class="act on" id="addrGo">Read</button>
         </div>
-        <div class="note" id="addrOut">Stage 6. The browser-side reader exists and runs; it is not
-          wired into this page yet.</div>
+        <div class="note" id="addrOut">Reads the last thirty days off a public node, in this
+          tab. Nothing is sent anywhere else and nothing is kept.</div>
+        <div class="rprog" id="rProg" hidden><i></i></div>
         <dl class="spec" style="margin-top:18px">
           <dt>in / out</dt><dd>the two numbers, side by side, over thirty days</dd>
           <dt>opening tax</dt><dd>what Pons took on early buys, off your own transactions</dd>
@@ -749,17 +765,18 @@ footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;disp
         </dl>
       </div>
       <div class="cal">
-        <div class="calhead"><b>Your trading month</b><span>realised, by day</span>
-          <span class="ex">example until you read an address</span></div>
+        <div class="calhead"><b id="calT">Your trading month</b><span id="calS">realised, by day</span>
+          <span class="ex" id="calEx">example until you read an address</span></div>
         <div class="dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span>
           <span>S</span><span>S</span></div>
         <div class="grid" id="cal"></div>
         <div class="calsum">
-          <div><div class="k">Days traded</div><div class="v n" id="cD">0</div></div>
-          <div><div class="k">Green days</div><div class="v n" id="cG" style="color:var(--lime)">0</div></div>
-          <div><div class="k">Best day</div><div class="v n" id="cB" style="color:var(--lime)">0</div></div>
-          <div><div class="k">Month</div><div class="v n" id="cM">0</div></div>
+          <div><div class="k" id="kD">Days traded</div><div class="v n" id="cD">0</div></div>
+          <div><div class="k" id="kG">Green days</div><div class="v n" id="cG" style="color:var(--lime)">0</div></div>
+          <div><div class="k" id="kB">Best day</div><div class="v n" id="cB" style="color:var(--lime)">0</div></div>
+          <div><div class="k" id="kM">Month</div><div class="v n" id="cM">0</div></div>
         </div>
+        <div class="calfoot" id="calFoot" hidden></div>
       </div>
     </div>
   </section>
@@ -1386,44 +1403,263 @@ tabs.forEach(function(t){
     if(n<0||n>=tabs.length) return;
     e.preventDefault(); tabs[n].focus(); show(tabs[n].dataset.p);});});
 
-/* ---------- the trading calendar (example, and it says so) ---------- */
-(function(){
-  var days=[1.05, 1.80, 2.64,-0.82, 0.61, 2.15,-0.55,
-            1.24,-1.42, 3.10, 1.18, 0,    1.36,-1.74,
-            0.78, 0.92, 3.55, 1.52,-0.91, 0,    0.86,
-            4.28, 1.60,-1.15, 0,    2.07, 0.74, 0.97,
-           -0.64, 2.76];
-  var h='',traded=0,green=0,best=0,month=0;
-  var peak=Math.max.apply(null,days.map(Math.abs));
-  for(var i=0;i<2;i++) h+='<div class="day off"></div>';
-  days.forEach(function(v,i){
-    var cls=v>0?'up':v<0?'dn':'flat';
-    if(v!==0){traded++;month+=v;if(v>0){green++;best=Math.max(best,v)}}
-    /* alpha from the size of the day, floored so a small day is still visible
-       and capped so a big one never swallows its own number */
-    var k=Math.abs(v)/peak;
-    var bg=v===0?'' : ';background:rgba('+(v>0?'219,253,82':'255,90,60')+','
-      +(0.05+0.17*k).toFixed(3)+')';
-    h+='<div class="day '+cls+(k>=.72&&v!==0?' big':'')
-      +'" style="animation-delay:'+(i*13)+'ms'+bg+'" title="Day '+(i+1)+' · '
-      +(v?(v>0?'+':'')+v.toFixed(2)+' ETH closed':'no trades closed')+'">'
-      +'<span>'+(i+1)+'</span><span class="pl">'+(v?(v>0?'+':'')+v.toFixed(2):'·')+'</span></div>';});
-  /* close the rectangle: the two cells before the 1st are matched after the
-     30th, so the month ends on an edge rather than trailing off */
-  while((h.match(/class="day/g)||[]).length % 7) h+='<div class="day off"></div>';
-  $('cal').innerHTML=h;
-  $('cD').textContent=traded; $('cG').textContent=green+' / '+traded;
-  $('cB').textContent='+'+best.toFixed(2);
-  var m=$('cM'); m.textContent=(month>0?'+':'')+month.toFixed(2);
-  m.style.color=month>=0?'var(--lime)':'var(--red)';
+/* ---------- the calendar, from either source ----------
+   One painter, two callers: the example month below, and the reader further
+   down once somebody pastes an address. The mode decides what a cell means -
+   'money' prints signed ETH and goes red below zero, 'trades' prints a count
+   and never does, because a count of trades is not a profit and a red cell
+   would say it was. */
+var CAL = (function(){
+  var EXAMPLE = [1.05, 1.80, 2.64,-0.82, 0.61, 2.15,-0.55,
+                 1.24,-1.42, 3.10, 1.18, 0,    1.36,-1.74,
+                 0.78, 0.92, 3.55, 1.52,-0.91, 0,    0.86,
+                 4.28, 1.60,-1.15, 0,    2.07, 0.74, 0.97,
+                -0.64, 2.76];
+
+  function paint(days, o){
+    o = o || {};
+    var money = o.mode !== 'trades';
+    var lead = o.lead == null ? 2 : o.lead;
+    var h='', active=0, green=0, best=0, total=0;
+    var peak = Math.max.apply(null, days.map(Math.abs).concat([1]));
+    for(var i=0;i<lead;i++) h+='<div class="day off"></div>';
+    days.forEach(function(v,i){
+      var cls = money ? (v>0?'up':v<0?'dn':'flat') : (v>0?'up':'flat');
+      if(v!==0){ active++; total+=v; if(v>0){ green++; best=Math.max(best,v) } }
+      var k = Math.abs(v)/peak;
+      var bg = v===0 ? '' : ';background:rgba('+((money&&v<0)?'255,90,60':'219,253,82')+','
+        +(0.05+0.17*k).toFixed(3)+')';
+      var txt = v===0 ? '·' : money ? (v>0?'+':'')+v.toFixed(2) : String(v);
+      var lbl = o.labelFor ? o.labelFor(i, v)
+        : 'Day '+(i+1)+' · '+(v ? (v>0?'+':'')+v.toFixed(2)+' ETH closed' : 'no trades closed');
+      h+='<div class="day '+cls+(k>=.72&&v!==0?' big':'')
+        +'" style="animation-delay:'+(i*13)+'ms'+bg+'" title="'+lbl+'">'
+        +'<span>'+(o.dayLabel?o.dayLabel(i):(i+1))+'</span>'
+        +'<span class="pl">'+txt+'</span></div>';
+    });
+    while((h.match(/class="day/g)||[]).length % 7) h+='<div class="day off"></div>';
+    $('cal').innerHTML = h;
+
+    if(money){
+      $('kD').textContent='Days traded';  $('cD').textContent=active;
+      $('kG').textContent='Green days';   $('cG').textContent=green+' / '+active;
+      $('kB').textContent='Best day';     $('cB').textContent='+'+best.toFixed(2);
+      $('kM').textContent='Month';
+      $('cM').textContent=(total>0?'+':'')+total.toFixed(2);
+      $('cM').style.color = total>=0?'var(--lime)':'var(--red)';
+    } else {
+      $('kD').textContent='Days active';  $('cD').textContent=active;
+      $('kG').textContent='Transfers';    $('cG').textContent=total;
+      $('kB').textContent='Busiest day';  $('cB').textContent=String(best);
+      $('kM').textContent='Tokens';       $('cM').textContent=String(o.tokens||0);
+      $('cM').style.color='var(--txt)';
+    }
+  }
+
+  function example(){
+    paint(EXAMPLE, {mode:'money', lead:2});
+    $('calT').textContent='Your trading month';
+    $('calS').textContent='realised, by day';
+    var ex=$('calEx'); ex.className='ex'; ex.textContent='example until you read an address';
+    $('calFoot').hidden = true;
+  }
+
+  example();
+  return {paint:paint, example:example};
 })();
 
-$('addrGo').addEventListener('click',function(){
-  var v=$('addr').value.trim();
-  $('addrOut').textContent=/^0x[a-fA-F0-9]{40}$/.test(v)
-    ? 'Well-formed address. The browser-side reader is stage 6 and is not wired into this page yet — nothing was sent anywhere.'
-    : 'That does not look like an address: 0x followed by 40 hex characters.';
-});
+/* ---------- the reader ----------
+   Ported from web/book.html, which is the deeper tool and stays the deeper
+   tool. Same three rules: an allow-list of read-only methods checked before a
+   request is built, every call going straight from this tab to a public node,
+   and nothing stored anywhere - reload and the page has forgotten the address.
+
+   There is no server in this path to log an address, because there is no
+   server in this path. */
+(function(){
+  var RPC = 'https://rpc.mainnet.chain.robinhood.com';
+  var CHAIN = 4663;
+  var TRANSFER = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+  var DAYS = 30;
+
+  /* Everything here only reads. A method that could sign, send or change
+     anything is refused where it is named, not where it is sent. */
+  var ALLOWED = ['eth_chainId','eth_blockNumber','eth_getBlockByNumber',
+                 'eth_getLogs','eth_getBalance','eth_call','net_version'];
+
+  var id = 1, busy = false;
+  var out = $('addrOut'), prog = $('rProg'), bar = prog.firstElementChild;
+
+  function say(t, cls){ out.innerHTML = t; out.className = 'note' + (cls?' '+cls:''); }
+  function pct(p){ prog.hidden = p == null;
+                   if(p != null) bar.style.width = Math.max(2,Math.min(100,p*100))+'%' }
+
+  function body(method, params){
+    if(ALLOWED.indexOf(method) === -1) throw new Error('refused: '+method+' is not read-only');
+    return {jsonrpc:'2.0', id:id++, method:method, params:params||[]};
+  }
+  async function rpc(method, params){
+    var r = await fetch(RPC, {method:'POST', headers:{'content-type':'application/json'},
+                              body:JSON.stringify(body(method,params))});
+    if(!r.ok) throw new Error('the node answered http '+r.status);
+    var j = await r.json();
+    if(j.error) throw new Error(j.error.message||'the node refused the call');
+    return j.result;
+  }
+  async function batch(calls){
+    var r = await fetch(RPC, {method:'POST', headers:{'content-type':'application/json'},
+      body:JSON.stringify(calls.map(function(c){ return body(c[0], c[1]) }))});
+    if(!r.ok) throw new Error('the node answered http '+r.status);
+    var j = await r.json();
+    if(!Array.isArray(j)) throw new Error('the node did not answer a batch');
+    j.sort(function(a,b){ return a.id-b.id });
+    return j.map(function(x){ return x.error ? null : x.result });
+  }
+
+  var hx = function(n){ return '0x'+n.toString(16) };
+  var pad = function(a){ return '0x000000000000000000000000'+a.toLowerCase().replace(/^0x/,'') };
+
+  /* A node caps a log response and refuses a range it thinks is too wide. Both
+     answers mean the same thing - ask for less - so both split. */
+  async function logs(from, to, topics, onp){
+    var res=[], stack=[[from,to]], span=to-from+1, done=0, guard=0;
+    while(stack.length){
+      if(++guard > 600) break;
+      var r=stack.pop(), a=r[0], b=r[1];
+      try{
+        var got = await rpc('eth_getLogs',[{fromBlock:hx(a), toBlock:hx(b), topics:topics}]);
+        if(got.length >= 9500 && b > a){
+          var m=(a+b)>>1; stack.push([m+1,b]); stack.push([a,m]); continue;
+        }
+        res=res.concat(got); done+=(b-a+1); if(onp) onp(done/span);
+      }catch(e){
+        if(b > a){ var m2=(a+b)>>1; stack.push([m2+1,b]); stack.push([a,m2]) }
+        else done+=1;
+      }
+    }
+    return res;
+  }
+
+  function utcDay(ts){ var d=new Date(ts*1000);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())/86400000 }
+
+  async function read(addr){
+    if(busy) return;
+    busy = true; pct(0.02);
+    say('Asking the node what block it is on…');
+    try{
+      var chain = parseInt(await rpc('eth_chainId'), 16);
+      if(chain !== CHAIN) throw new Error('that node is chain '+chain+', not Robinhood Chain '+CHAIN);
+
+      var head = parseInt(await rpc('eth_blockNumber'), 16);
+      /* Block time is measured, not assumed: two real blocks, far enough apart
+         that jitter does not matter. */
+      var probe = Math.max(1, head - 20000);
+      var two = await batch([['eth_getBlockByNumber',[hx(head), false]],
+                             ['eth_getBlockByNumber',[hx(probe), false]]]);
+      if(!two[0] || !two[1]) throw new Error('the node would not hand over a block header');
+      var tHead = parseInt(two[0].timestamp,16), tProbe = parseInt(two[1].timestamp,16);
+      var secPerBlock = Math.max(0.05, (tHead - tProbe) / Math.max(1, head - probe));
+      var from = Math.max(0, head - Math.ceil(DAYS*86400/secPerBlock));
+
+      pct(0.1);
+      say('Walking the transfer log over the last <b>'+DAYS+'</b> days &mdash; about '
+          +(head-from).toLocaleString('en-US')+' blocks.');
+
+      var t = pad(addr);
+      var sent = await logs(from, head, [TRANSFER, t, null], function(f){ pct(0.1+0.35*f) });
+      var recv = await logs(from, head, [TRANSFER, null, t], function(f){ pct(0.45+0.35*f) });
+      var all = sent.concat(recv);
+
+      if(!all.length){
+        pct(null); busy = false;
+        say('Nothing for <b>'+addr.slice(0,10)+'…'+addr.slice(-4)+'</b> in the last '+DAYS
+            +' days on this chain. The address is fine &mdash; there is just no traffic to read.');
+        return;
+      }
+
+      /* One timestamp per block that actually has an event in it. */
+      var blocks = {};
+      all.forEach(function(l){ blocks[parseInt(l.blockNumber,16)] = 0 });
+      var keys = Object.keys(blocks).map(Number);
+      var stamps = {};
+      if(keys.length <= 600){
+        for(var i=0;i<keys.length;i+=25){
+          var chunk = keys.slice(i,i+25);
+          var got = await batch(chunk.map(function(b){
+            return ['eth_getBlockByNumber',[hx(b), false]] }));
+          got.forEach(function(bk, k){
+            if(bk) stamps[chunk[k]] = parseInt(bk.timestamp,16) });
+          pct(0.8 + 0.18*(i/keys.length));
+        }
+      }
+      /* Too many blocks to ask about one by one: place them on the measured
+         block time instead, and the panel says that is what happened. */
+      var estimated = keys.length > 600;
+      keys.forEach(function(b){
+        if(stamps[b] == null) stamps[b] = tHead - (head - b) * secPerBlock });
+
+      var today = utcDay(Math.floor(Date.now()/1000));
+      var first = today - (DAYS - 1);
+      var perDay = new Array(DAYS).fill(0), tokens = {};
+      all.forEach(function(l){
+        tokens[l.address.toLowerCase()] = 1;
+        var d = utcDay(stamps[parseInt(l.blockNumber,16)]) - first;
+        if(d >= 0 && d < DAYS) perDay[d]++;
+      });
+
+      var bal = await rpc('eth_getBalance', [addr, 'latest']);
+      var eth = Number(BigInt(bal||'0x0') / BigInt(1e14)) / 1e4;
+
+      var lead = (new Date((first)*86400000).getUTCDay() + 6) % 7;   /* Monday first */
+      CAL.paint(perDay, {
+        mode:'trades', lead:lead, tokens:Object.keys(tokens).length,
+        dayLabel:function(i){ return new Date((first+i)*86400000).getUTCDate() },
+        labelFor:function(i,v){
+          var d = new Date((first+i)*86400000).toISOString().slice(0,10);
+          return d+' · '+(v ? v+' token transfer'+(v===1?'':'s') : 'nothing');
+        }
+      });
+      $('calT').textContent = 'Your last thirty days';
+      $('calS').textContent = 'token transfers, by day';
+      var ex = $('calEx'); ex.className = 'ex live';
+      ex.textContent = addr.slice(0,8)+'…'+addr.slice(-4)+' · '+eth.toFixed(3)+' ETH';
+      var foot = $('calFoot'); foot.hidden = false;
+      foot.innerHTML = '<b>Counts, not money.</b> Pricing a swap in ETH needs the swap decode '
+        + 'and the opening-tax read, which are not written yet — so these cells count trades '
+        + 'and stay quiet about profit.'
+        + (estimated ? ' Block times estimated: too many blocks to ask about individually.' : '')
+        + '<button type="button" id="calBack">show the example</button>';
+      $('calBack').addEventListener('click', CAL.example);
+
+      pct(null); busy = false;
+      say('Read <b>'+all.length+'</b> transfers across <b>'+Object.keys(tokens).length
+          +'</b> tokens, straight from the node into this tab. Nothing was stored.');
+    }catch(e){
+      pct(null); busy = false;
+      var msg = String(e && e.message || e);
+      if(/failed to fetch|networkerror|load failed|content security/i.test(msg)){
+        say('This copy of the page is not allowed to make network calls, so the reader '
+            + 'cannot run here. It works on <b>trace-terminal.com</b>, and offline from a '
+            + 'clone via <b>web/book.html</b>.', 'bad');
+      } else {
+        say('Could not read it: '+msg+'. Nothing was sent anywhere else.', 'bad');
+      }
+    }
+  }
+
+  function go(){
+    var v = $('addr').value.trim();
+    if(!/^0x[a-fA-F0-9]{40}$/.test(v)){
+      say('That does not look like an address: <b>0x</b> followed by 40 hex characters.', 'bad');
+      return;
+    }
+    read(v);
+  }
+  $('addrGo').addEventListener('click', go);
+  $('addr').addEventListener('keydown', function(e){ if(e.key === 'Enter') go() });
+})();
+
 </script>
 
 </body>
