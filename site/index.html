@@ -1519,22 +1519,40 @@ var CAL = (function(){
   var hx = function(n){ return '0x'+n.toString(16) };
   var pad = function(a){ return '0x000000000000000000000000'+a.toLowerCase().replace(/^0x/,'') };
 
-  /* A node caps a log response and refuses a range it thinks is too wide. Both
-     answers mean the same thing - ask for less - so both split. */
-  async function logs(from, to, topics, onp){
-    var res=[], stack=[[from,to]], span=to-from+1, done=0, guard=0;
+  /* This node answers with an error when more than ten thousand logs match,
+     and does not care how wide the range is - 58 million blocks come back in
+     under a second when nothing matches. So a matched-limit error means split,
+     and only that. Failing to reach the node at all means wait, because
+     splitting a rate-limited walk into more requests makes it worse. */
+  var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms) }) };
+  var TOO_MANY = /exceed|limit|too many|more than|response size|10000/i;
+
+  async function logs(from, to, topics, onp, st){
+    var res=[], stack=[[from,to]], span=to-from+1, done=0, guard=0, retried={};
     while(stack.length){
-      if(++guard > 600) break;
+      if(++guard > 1200){ st.partial = true; break }
       var r=stack.pop(), a=r[0], b=r[1];
       try{
         var got = await rpc('eth_getLogs',[{fromBlock:hx(a), toBlock:hx(b), topics:topics}]);
         if(got.length >= 9500 && b > a){
           var m=(a+b)>>1; stack.push([m+1,b]); stack.push([a,m]); continue;
         }
-        res=res.concat(got); done+=(b-a+1); if(onp) onp(done/span);
+        res=res.concat(got); done+=(b-a+1); st.covered+=(b-a+1);
+        if(onp) onp(done/span);
       }catch(e){
-        if(b > a){ var m2=(a+b)>>1; stack.push([m2+1,b]); stack.push([a,m2]) }
-        else done+=1;
+        var msg = String(e && e.message || e);
+        var reachable = !/failed to fetch|networkerror|load failed/i.test(msg);
+        if(!reachable){
+          /* the node, not the range. Same range again, once, after a breath. */
+          var key = a+':'+b;
+          if(!retried[key]){ retried[key]=1; await sleep(700); stack.push([a,b]); continue }
+          st.partial = true; done+=(b-a+1); continue;
+        }
+        if(b > a && TOO_MANY.test(msg)){
+          var m2=(a+b)>>1; stack.push([m2+1,b]); stack.push([a,m2]);
+        } else {
+          st.partial = true; done+=(b-a+1);
+        }
       }
     }
     return res;
@@ -1563,12 +1581,13 @@ var CAL = (function(){
       var from = Math.max(0, head - Math.ceil(DAYS*86400/secPerBlock));
 
       pct(0.1);
-      say('Walking the transfer log over the last <b>'+DAYS+'</b> days &mdash; about '
-          +(head-from).toLocaleString('en-US')+' blocks.');
+      say('Walking the transfer log over the last <b>'+DAYS+'</b> days &mdash; '
+          +(head-from).toLocaleString('en-US')+' blocks at '
+          +secPerBlock.toFixed(2)+'s each.');
 
-      var t = pad(addr);
-      var sent = await logs(from, head, [TRANSFER, t, null], function(f){ pct(0.1+0.35*f) });
-      var recv = await logs(from, head, [TRANSFER, null, t], function(f){ pct(0.45+0.35*f) });
+      var t = pad(addr), st = {partial:false, covered:0};
+      var sent = await logs(from, head, [TRANSFER, t, null], function(f){ pct(0.1+0.35*f) }, st);
+      var recv = await logs(from, head, [TRANSFER, null, t], function(f){ pct(0.45+0.35*f) }, st);
       var all = sent.concat(recv);
 
       if(!all.length){
@@ -1628,13 +1647,16 @@ var CAL = (function(){
       foot.innerHTML = '<b>Counts, not money.</b> Pricing a swap in ETH needs the swap decode '
         + 'and the opening-tax read, which are not written yet — so these cells count trades '
         + 'and stay quiet about profit.'
+        + (st.partial ? ' <b>Partial read:</b> this address moves too much for one pass, so '
+            + 'what is drawn is some of the window, not all of it.' : '')
         + (estimated ? ' Block times estimated: too many blocks to ask about individually.' : '')
         + '<button type="button" id="calBack">show the example</button>';
       $('calBack').addEventListener('click', CAL.example);
 
       pct(null); busy = false;
       say('Read <b>'+all.length+'</b> transfers across <b>'+Object.keys(tokens).length
-          +'</b> tokens, straight from the node into this tab. Nothing was stored.');
+          +'</b> tokens, straight from the node into this tab. Nothing was stored.'
+          + (st.partial ? ' The walk did not finish — this address is a busy one.' : ''));
     }catch(e){
       pct(null); busy = false;
       var msg = String(e && e.message || e);
