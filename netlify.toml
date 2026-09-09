@@ -1,0 +1,16 @@
+# TRACE is a static page. There is nothing to build: the site is one
+# self-contained HTML file, deliberately, so that what is served is exactly
+# what is in the repository and anybody can read it end to end.
+[build]
+  publish = "site"
+  command = ""
+
+[[redirects]]
+  from = "/book"
+  to = "/book.html"
+  status = 301
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/marlowxbt/trace"
+  status = 302

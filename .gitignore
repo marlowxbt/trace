@@ -34,3 +34,6 @@ _to_delete/
 # profile pictures do not belong in a public repository
 authors_seed.json
 seed_authors.py
+
+# the desktop app's staging folder for files sent to the chat
+Claude outputs/

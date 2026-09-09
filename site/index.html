@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="TRACE counts every post about every memecoin on Robinhood Chain, five minutes at a time, against what a token that age normally gets. Read-only: no signer, no buy button, no price prediction.">
+<meta name="theme-color" content="#07080A">
+<link rel="canonical" href="https://trace-terminal.netlify.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="TRACE — the room gets loud before the chart moves">
+<meta property="og:description" content="A read-only attention terminal for Robinhood Chain. 316 posts bought in a day, 107 counted, 2 rooms called loud.">
+<meta property="og:image" content="https://raw.githubusercontent.com/marlowxbt/trace/main/assets/banner.svg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307080A'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23DBFD52'/%3E%3C/svg%3E">
+<title>TRACE — the room gets loud before the chart moves</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#07080A; --panel:#0B0D11; --panel2:#0E1116; --sunk:#050609;
+  --rule:#171B23; --rule2:#242A35;
+  --txt:#E9E7E0; --dim:#858C98; --dim2:#565D69;
+  --lime:#DBFD52; --red:#FF5A3C; --steel:#5F8B96;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Archivo',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:13.5px;
+  line-height:1.62;-webkit-font-smoothing:antialiased}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+
+/* the background: a launch field behind everything, and a grid that drifts */
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+#grid{position:fixed;inset:-60px;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(219,253,82,.075) 1px,transparent 0);
+  background-size:32px 32px;animation:drift 120s linear infinite}
+@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(32px,32px,0)}}
+#veil{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(125% 85% at 50% 0%,transparent 48%,rgba(7,8,10,.58) 100%)}
+.wrap,.rail{position:relative;z-index:1}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit}
+.n{font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px;margin:0 auto;padding:0 22px}
+h2{font-family:var(--disp);font-weight:800;font-size:clamp(21px,2.6vw,32px);line-height:1.06;
+  letter-spacing:-.02em;margin:0;text-transform:uppercase;text-wrap:balance}
+h2 em{font-style:normal;color:var(--lime)}
+.eyebrow{font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim2)}
+.sec{padding:66px 0 0}
+.sechead{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.sechead .no{font-family:var(--disp);font-weight:800;font-size:12px;color:var(--dim2);
+  letter-spacing:.1em}
+.sechead .note{margin-left:auto;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim2)}
+p{margin:0}
+.lede{color:var(--dim);max-width:70ch;font-size:13.5px}
+.lede b{color:var(--txt);font-weight:500}
+
+/* rail */
+.rail{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--rule);
+  background:rgba(7,8,10,.88);backdrop-filter:blur(8px)}
+.rail .in{max-width:1200px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:16px}
+.mark{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:900;font-size:16px;
+  letter-spacing:.26em;text-decoration:none;text-transform:uppercase}
+.mark i{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime);
+  animation:bp 2.6s infinite}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.25}}
+nav{display:flex;gap:16px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
+nav a{text-decoration:none;padding-bottom:2px;border-bottom:1px solid transparent}
+nav a:hover{color:var(--txt);border-bottom-color:var(--lime)}
+.rail .sp{margin-left:auto;display:flex;gap:7px;align-items:center;font-size:10px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
+.chip{border:1px solid var(--rule2);border-radius:100px;padding:3px 11px;white-space:nowrap}
+.chip b{color:var(--txt);font-weight:500}
+.chip.on{border-color:rgba(219,253,82,.45);color:var(--lime)}
+
+/* the reader */
+.reader{border:1px solid var(--rule2);border-radius:14px;background:var(--panel);overflow:hidden;
+  box-shadow:0 0 0 1px rgba(219,253,82,.05),0 22px 60px rgba(0,0,0,.55)}
+.rhead{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--rule);
+  background:var(--panel2);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim2);flex-wrap:wrap}
+.rhead b{color:var(--txt);font-weight:500}
+.rhead .dot{width:7px;height:7px;border-radius:50%;background:var(--lime);
+  box-shadow:0 0 9px var(--lime);animation:bp 2s infinite}
+.rhead .rmeta{color:var(--dim2);letter-spacing:.06em;text-transform:none}
+.rhead .rstate{margin-left:auto}
+.rhead .illus{border:1px solid rgba(219,253,82,.3);border-radius:100px;padding:2px 8px;
+  color:var(--lime);font-size:9px;letter-spacing:.1em}
+.rfeed{padding:9px 10px;min-height:342px;display:flex;flex-direction:column;gap:8px;
+  justify-content:flex-end;overflow:hidden}
+.post{border:1px solid var(--rule);border-radius:10px;background:var(--sunk);padding:10px 12px;
+  animation:slidein .4s cubic-bezier(.2,.7,.3,1);flex:0 0 auto;min-width:0}
+@keyframes slidein{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.post.hit{border-color:rgba(219,253,82,.3);background:rgba(219,253,82,.045)}
+.post.miss{border-color:rgba(255,90,60,.28);background:rgba(255,90,60,.035)}
+.pmeta{display:flex;align-items:center;gap:9px;font-size:10.5px;color:var(--dim2);
+  margin-bottom:8px;text-decoration:none;min-width:0}
+.pmeta img.av{width:27px;height:27px;border-radius:50%;flex:0 0 auto;object-fit:cover;
+  border:1px solid var(--rule2);background:var(--panel2)}
+.pmeta .who{display:flex;flex-direction:column;min-width:0;line-height:1.28}
+.pmeta .nm{color:var(--txt);font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.pmeta .hd{color:var(--dim2);font-size:10.5px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.pmeta .rt{margin-left:auto;display:flex;align-items:center;gap:9px;flex:0 0 auto;
+  padding-left:8px}
+.pmeta .t{font-variant-numeric:tabular-nums}
+.post:hover .pmeta .nm{color:var(--lime)}
+.ptxt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:12.5px;color:var(--dim);line-height:1.5;overflow-wrap:anywhere}
+.tk{color:var(--lime);font-weight:500}
+.ca{color:var(--lime);border-bottom:1px dotted rgba(219,253,82,.45);white-space:nowrap}
+.ca.bad{color:var(--red);border-bottom-color:rgba(255,90,60,.5)}
+.tk.bad{color:var(--steel)}
+.verdict{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;margin-top:8px;
+  color:var(--lime);overflow-wrap:anywhere}
+.verdict.off{color:var(--red);opacity:.85}
+.verdict .badge{display:inline-block;border:1px solid var(--rule2);border-radius:100px;
+  padding:1px 9px;margin-right:9px;color:var(--dim2);letter-spacing:.08em}
+.rfoot{border-top:1px solid var(--rule);background:var(--panel2);padding:10px 14px;display:flex;
+  gap:16px;flex-wrap:wrap;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim2);align-items:center}
+.rfoot b{color:var(--txt);font-weight:600;font-family:var(--disp);font-size:14px}
+.rfoot .rnote{margin-left:auto;text-transform:none;letter-spacing:.02em;font-size:10px}
+.rfoot.fire{background:rgba(255,90,60,.09);border-top-color:rgba(255,90,60,.4)}
+.rhead .live{border:1px solid var(--rule2);border-radius:100px;padding:2px 8px;font-size:9px;
+  letter-spacing:.1em;color:var(--dim)}
+.rej{display:grid;gap:9px;margin-top:6px}
+.rejrow{display:grid;grid-template-columns:27px 1fr;gap:11px;align-items:start;
+  border:1px solid var(--rule);border-radius:10px;background:var(--sunk);padding:11px 13px}
+.rejrow img{width:27px;height:27px;border-radius:50%;object-fit:cover;border:1px solid var(--rule2)}
+.rejrow .top{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.rejrow .nm{color:var(--txt);font-size:12.5px;font-weight:500}
+.rejrow .hd{color:var(--dim2);font-size:10.5px}
+.rejrow .why{margin-left:auto;color:var(--red);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase}
+.rejrow .bd{color:var(--dim);font-size:12.5px;line-height:1.5;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+a.rejrow{text-decoration:none;color:inherit}
+.rejrow:hover .nm{color:var(--lime)}
+.subhead{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);
+  margin:24px 0 10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.subhead b{color:var(--red);font-weight:500}
+.rejrow.on{border-color:rgba(255,90,60,.42);background:rgba(255,90,60,.05)}
+.tag{border:1px solid currentColor;border-radius:100px;padding:1px 8px;font-size:9px;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--red);white-space:nowrap}
+.tag.q{color:var(--dim2)}
+.rejrow .mono{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;
+  border:1px solid var(--rule2);background:var(--panel2);color:var(--dim2);font-size:10px;
+  font-weight:600}
+.post.on{border-color:rgba(255,90,60,.45)}
+.post .listed{color:var(--red);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  border:1px solid rgba(255,90,60,.5);border-radius:100px;padding:1px 7px;white-space:nowrap}
+
+/* hero + 3d field */
+.hero{position:relative;padding:70px 0 34px;display:grid;grid-template-columns:1.02fr .98fr;
+  gap:40px;align-items:center}
+#field{width:100%;height:300px;display:block;border-radius:12px;
+  background:linear-gradient(180deg,rgba(14,17,22,.9),rgba(5,6,9,.9));
+  border:1px solid var(--rule2)}
+.fieldwrap{position:relative;margin-bottom:16px}
+.fieldcap{position:absolute;left:14px;bottom:12px;right:14px;display:flex;gap:14px;flex-wrap:wrap;
+  font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
+.fieldcap i{width:8px;height:8px;display:inline-block;margin-right:6px;vertical-align:-1px;
+  border-radius:2px}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(27px,3.5vw,50px);line-height:.98;
+  letter-spacing:-.03em;margin:14px 0 0;text-transform:uppercase;text-wrap:balance}
+h1 em{font-style:normal;color:var(--lime)}
+.sub{color:var(--dim);font-size:14.5px;margin:18px 0 0;max-width:52ch}
+.sub b{color:var(--txt);font-weight:500}
+.acts{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
+.act{border:1px solid var(--rule2);border-radius:100px;padding:11px 20px;font-size:11.5px;
+  letter-spacing:.11em;text-transform:uppercase;text-decoration:none;display:inline-block;
+  transition:.18s;font-weight:500}
+.act:hover{border-color:var(--lime);color:var(--lime)}
+.act.on{background:var(--lime);border-color:var(--lime);color:#0A0A0A;font-weight:700}
+.act.on:hover{filter:brightness(1.07);color:#0A0A0A}
+.act.mute{color:var(--dim2);border-style:dashed;cursor:default}
+.act.mute:hover{border-color:var(--rule2);color:var(--dim2)}
+
+/* the tape - the real watchlist, moving */
+.tape{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);overflow:hidden;
+  margin-top:20px;background:var(--sunk);position:relative;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.tapein{display:flex;width:max-content;padding:9px 0;gap:0;animation:slide 42s linear infinite}
+.tape:hover .tapein{animation-play-state:paused}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tp{display:inline-flex;align-items:center;gap:9px;padding:0 20px;white-space:nowrap;
+  font-size:11.5px;color:var(--dim2);border-right:1px solid var(--rule)}
+.tp b{color:var(--txt);font-weight:500}
+.tp .d{color:var(--rule2)}
+.tp em{font-style:normal;font-variant-numeric:tabular-nums}
+.tp.SPIKE b{color:var(--red)} .tp.SPIKE em{color:var(--red)}
+.tp.WARM b{color:var(--lime)} .tp.WARM em{color:var(--lime)}
+.tp.QUIET em{color:var(--steel)}
+
+/* the funnel - thirty thousand launches down to two calls */
+.funnel{border:1px solid var(--rule);border-radius:12px;background:var(--panel);
+  margin-top:18px;padding:19px 22px 8px;overflow:hidden}
+.fhead{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:16px}
+.fhead b{font-family:var(--disp);font-weight:800;font-size:15px;text-transform:uppercase;
+  letter-spacing:-.01em}
+.fhead span{margin-left:auto;font-size:10.5px;color:var(--dim2)}
+.fsteps{display:flex;flex-direction:column}
+.fstep{display:grid;grid-template-columns:132px minmax(0,1fr);gap:20px;align-items:baseline;
+  opacity:0;transform:translateY(10px);transition:opacity .5s ease-out,transform .5s ease-out}
+.fstep.in{opacity:1;transform:none}
+.fstep .fv{font-family:var(--disp);font-weight:800;font-size:clamp(24px,2.6vw,34px);
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;text-align:right}
+.fstep .fk{font-size:13.5px;color:var(--txt)}
+.fstep .fs{font-size:11.5px;color:var(--dim2);line-height:1.4;margin-top:2px}
+/* the one comparison that shares a unit, so the one place a bar is honest */
+.fsplit{height:9px;background:var(--sunk);border:1px solid var(--rule);border-radius:3px;
+  overflow:hidden;margin-top:9px;max-width:340px}
+.fsplit i{display:block;height:100%;width:0;background:var(--lime);border-radius:2px;
+  transition:width 1.1s cubic-bezier(.2,.7,.3,1) .25s}
+.fcut{display:grid;grid-template-columns:132px minmax(0,1fr);gap:20px;margin:10px 0;
+  font-size:11px;color:var(--dim2);opacity:0;transition:opacity .5s ease-out}
+.fcut.in{opacity:1}
+.fcut s{text-decoration:none;color:var(--dim2);opacity:.7;text-align:right;letter-spacing:.2em;font-size:13px}
+.fcut span{border-left:1px solid var(--rule);padding:2px 0 2px 14px;line-height:1.4}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.step{border:1px solid var(--rule);border-radius:12px;background:var(--panel);padding:20px 20px 18px;
+  position:relative;overflow:hidden}
+.step .num{font-family:var(--disp);font-weight:900;font-size:44px;line-height:1;color:var(--rule2);
+  letter-spacing:-.04em}
+.step h3{font-family:var(--disp);font-weight:800;font-size:16px;margin:6px 0 8px;
+  text-transform:uppercase;letter-spacing:-.01em}
+.step p{color:var(--dim);font-size:12.5px}
+.step p b{color:var(--txt);font-weight:500}
+.step .vis{margin-top:15px;height:58px;border-top:1px solid var(--rule);padding-top:13px;
+  display:flex;align-items:flex-end;gap:3px}
+.step .vis span{flex:1;background:var(--steel);border-radius:2px 2px 0 0;transition:height .6s}
+.step .vis span.hot{background:var(--red);box-shadow:0 0 10px rgba(255,90,60,.6)}
+.step .vis span.warm{background:var(--lime)}
+
+/* example */
+.plot{display:grid;grid-template-columns:1fr 250px;gap:22px;align-items:start}
+.plot svg{display:block;width:100%;height:auto}
+.gl{stroke:var(--rule);stroke-width:1}
+.ax{fill:var(--dim2);font:400 9.5px var(--mono);letter-spacing:.06em}
+.nl{fill:none;stroke:var(--steel);stroke-width:1.5;stroke-dasharray:2 4}
+.nlab{fill:var(--steel);font:400 9.5px var(--mono)}
+.co{fill:var(--red);font:500 12px var(--mono)}
+.co tspan{fill:var(--dim);font-size:9.5px}
+.hook{stroke:var(--red);stroke-width:1;opacity:.45;fill:none}
+.side dt{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2)}
+.side dd{margin:4px 0 16px;font-size:13px}
+.side .big{font-family:var(--disp);font-weight:800;font-size:40px;line-height:1;color:var(--red)}
+.dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}
+.dots i{width:6px;height:6px;background:var(--red);box-shadow:0 0 5px rgba(255,90,60,.6);
+  border-radius:1px}
+.reading{border-left:2px solid var(--lime);padding:2px 0 2px 16px;margin-top:22px;
+  color:var(--dim);font-size:13.5px;max-width:74ch}
+.reading b{color:var(--txt);font-weight:500}
+
+/* window + tabs */
+.win{border:1px solid var(--rule2);border-radius:12px;background:var(--panel);overflow:hidden}
+.bar{display:flex;border-bottom:1px solid var(--rule2);background:var(--panel2);overflow-x:auto;
+  scrollbar-width:none}
+.bar::-webkit-scrollbar{display:none}
+.lights{display:flex;align-items:center;gap:6px;padding:0 15px;border-right:1px solid var(--rule)}
+.lights i{width:9px;height:9px;border-radius:50%;background:var(--rule2)}
+.tab{padding:12px 17px;font-size:11.5px;letter-spacing:.07em;color:var(--dim2);
+  border-right:1px solid var(--rule);white-space:nowrap;position:relative;transition:.16s}
+.tab:hover{color:var(--dim)}
+.tab[aria-selected="true"]{color:var(--lime);background:var(--panel)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:var(--lime)}
+.tab:focus-visible{outline:1px solid var(--lime);outline-offset:-3px}
+.pane{padding:22px;animation:fin .3s ease-out}
+@keyframes fin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.pane[hidden]{display:none}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2);text-align:left;
+  padding:0 10px 9px;font-weight:400;border-bottom:1px solid var(--rule)}
+td{padding:9px 10px;border-bottom:1px solid var(--rule);color:var(--dim)}
+tr:last-child td{border-bottom:0}
+tbody tr{transition:background .18s}
+tbody tr:hover{background:var(--panel2)}
+td.id{color:var(--txt)} td.r{text-align:right}
+.st{font-size:9px;letter-spacing:.13em;text-transform:uppercase;padding:2px 8px;border-radius:100px;
+  border:1px solid currentColor;display:inline-block}
+.st.SPIKE{color:var(--red)} .st.WARM{color:var(--lime)}
+.st.QUIET{color:var(--steel)} .st.WARMING{color:var(--dim2)}
+.mini{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;min-width:56px}
+.mini i{display:block;height:100%;border-radius:2px;transition:width .8s ease-out}
+
+.spec{display:grid;grid-template-columns:126px 1fr;font-size:12.5px}
+.spec dt{color:var(--lime);padding:8px 0;border-bottom:1px solid var(--rule)}
+.spec dd{margin:0;padding:8px 0;color:var(--dim);border-bottom:1px solid var(--rule)}
+.spec dd b{color:var(--txt);font-weight:500}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+.two>*{min-width:0}
+.states div{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--rule);color:var(--dim);font-size:12.5px;align-items:center}
+.states div:last-child{border-bottom:0}
+.crow{display:grid;grid-template-columns:76px 1fr 100px;gap:12px;align-items:center;padding:8px 0;
+  border-bottom:1px solid var(--rule);font-size:12.5px}
+.crow:last-child{border-bottom:0}
+.crow .lb{color:var(--dim)}
+.crow .bx{height:10px;background:var(--rule);border-radius:2px;overflow:hidden}
+.crow .bx i{display:block;height:100%;background:var(--lime);border-radius:2px;
+  transition:width .9s cubic-bezier(.2,.7,.3,1)}
+.crow .vl{text-align:right;color:var(--txt)}
+.crow.none .vl{color:var(--dim2)} .crow.none .bx i{background:var(--rule2)}
+
+/* calendar */
+.cal{border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--panel2)}
+.calhead{display:flex;align-items:baseline;gap:12px;padding:12px 15px;border-bottom:1px solid var(--rule);
+  font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2);flex-wrap:wrap}
+.calhead b{color:var(--txt);font-weight:600;letter-spacing:.02em;text-transform:none;font-size:13.5px;
+  font-family:var(--disp)}
+.calhead .ex{margin-left:auto;color:var(--lime);border:1px solid rgba(219,253,82,.35);
+  border-radius:100px;padding:2px 9px;font-size:9px}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:11px 13px 0;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--dim2)}
+.dow span{text-align:center}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:6px 13px 13px}
+.day{aspect-ratio:1.2;min-height:46px;border-radius:6px;background:var(--sunk);
+  border:1px solid var(--rule);display:flex;flex-direction:column;justify-content:space-between;
+  padding:5px 6px;font-size:9.5px;color:var(--dim2);transition:transform .16s,border-color .16s;
+  animation:pop .34s backwards}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.day:hover{transform:translateY(-2px);border-color:var(--rule2)}
+.day .pl{font-size:11px;font-weight:500;font-variant-numeric:tabular-nums}
+.day.up{border-color:rgba(219,253,82,.35)} .day.up .pl{color:var(--lime)}
+.day.dn{border-color:rgba(255,90,60,.35)} .day.dn .pl{color:var(--red)}
+.day.flat .pl{color:var(--dim2)}
+.day.off{opacity:.2}
+.calsum{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
+.calsum div{padding:12px 15px;border-right:1px solid var(--rule)}
+.calsum div:last-child{border-right:0}
+.calsum .k{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
+.calsum .v{font-family:var(--disp);font-weight:800;font-size:21px;margin-top:3px}
+.addr{display:flex;gap:8px;margin:0 0 12px}
+.addr input{flex:1;min-width:0;background:var(--sunk);border:1px solid var(--rule2);
+  border-radius:100px;padding:11px 17px;color:var(--txt);font:inherit;font-size:12.5px}
+.addr input::placeholder{color:var(--dim2)}
+.addr input:focus{outline:0;border-color:var(--lime)}
+.note{color:var(--dim2);font-size:11.5px}
+
+/* never / stages */
+.never{display:grid;grid-template-columns:18px 1fr;gap:13px;padding:13px 0;
+  border-bottom:1px solid var(--rule);align-items:start}
+.never:last-child{border-bottom:0}
+.never s{color:var(--red);text-decoration:none;font-size:14px;line-height:1.3}
+.never b{display:block;color:var(--txt);font-family:var(--disp);font-weight:700;font-size:14px;
+  text-transform:uppercase;margin-bottom:3px}
+.never span{color:var(--dim);font-size:12.5px}
+.stage{display:grid;grid-template-columns:28px 1fr 86px;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--rule);font-size:12.5px;color:var(--dim);align-items:center}
+.stage:last-child{border-bottom:0}
+.stage .i{color:var(--dim2);font-size:11px}
+.stage .s{text-align:right;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase}
+.stage .s.d{color:var(--lime)} .stage .s.o{color:var(--dim2)}
+footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;display:flex;gap:24px;
+  flex-wrap:wrap;font-size:11px;color:var(--dim2)}
+
+@media (max-width:1000px){
+  .hero{grid-template-columns:1fr;gap:26px;padding-top:40px}
+  #field{height:300px}
+  .fstep,.fcut{grid-template-columns:86px minmax(0,1fr);gap:13px}
+  .steps{grid-template-columns:1fr}
+  .plot{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr;gap:22px}
+  nav{display:none}
+}
+@media (max-width:560px){
+  .fhead span{display:none}
+  .calsum{grid-template-columns:repeat(2,1fr)}
+  th.hide,td.hide{display:none}
+  .rail .sp .h{display:none}
+  .pane{padding:16px 14px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div id="grid" aria-hidden="true"></div>
+<div id="veil" aria-hidden="true"></div>
+</head>
+<body>
+<div class="rail"><div class="in">
+  <a class="mark" href="#top"><i></i>Trace</a>
+  <nav>
+    <a href="#how">How it works</a><a href="#example">Example</a><a href="#desk">The desk</a>
+    <a href="#books">Your books</a><a href="#token">$TRACE</a>
+  </nav>
+  <span class="sp">
+    <span class="chip h">Robinhood Chain <b>4663</b></span>
+    <span class="chip h">read only</span>
+    <span class="chip on">snapshot &middot; 9 Sep</span>
+  </span>
+</div></div>
+
+<div class="wrap" id="top">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Robinhood Chain &middot; id 4663 &middot; read-only</div>
+      <h1><em>Trace</em> counts every post<br>on Robinhood Chain.</h1>
+      <p class="sub"><b>TRACE</b> is a read-only terminal for Robinhood Chain. It follows every
+        memecoin coming off the factory, counts the posts about each one five minutes at a time,
+        and says one word when a room gets loud — <b>before the chart moves</b>. The other half
+        keeps your own book: what you put in, what you took out, day by day. Open source, and it
+        never touches your keys.</p>
+      <div class="acts">
+        <a class="act on" href="#how">How it works</a>
+        <a class="act" href="#example">See a real one</a>
+        <a class="act" href="#token">$TRACE</a>
+      </div>
+    </div>
+    <div class="reader">
+      <div class="rhead">
+        <span class="dot"></span><b>reading X</b>
+        <span class="rmeta">replay &middot; 9 Sep</span>
+        <span class="live" id="rWin">window &mdash;</span>
+        <span class="rstate st WARMING" id="rState">warming</span>
+      </div>
+      <div class="rfeed" id="rFeed"></div>
+      <div class="rfoot" id="rFoot">
+        <span><b class="n" id="rCount">0</b> posts in window</span>
+        <span><b class="n" id="rAcc2">0</b> accounts</span>
+        <span><b class="n" id="rMult2">&mdash;</b> <span id="rMultL">vs normal</span></span>
+        <span class="rnote">real posts &middot; click one to open it on X</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tape"><div class="tapein" id="tape"></div></div>
+
+  <div class="funnel" id="funnel">
+    <div class="fhead"><b>One day on the chain, end to end.</b>
+      <span>every number below came out of the collector, not out of a deck</span></div>
+    <div class="fsteps" id="fsteps"></div>
+  </div>
+
+  <!-- HOW -->
+  <section class="sec" id="how">
+    <div class="sechead"><span class="no">01</span><h2>What it does on <em>Robinhood Chain</em></h2>
+      <span class="note">three things, no model, no score</span></div>
+    <div class="fieldwrap">
+      <canvas id="field" aria-label="A field of memecoin launches on Robinhood Chain; almost all stay silent, one gets loud"></canvas>
+      <div class="fieldcap">
+        <span><i style="background:var(--steel)"></i>quiet</span>
+        <span><i style="background:var(--lime)"></i>warming</span>
+        <span><i style="background:var(--red)"></i>spike</span>
+        <span style="margin-left:auto">every memecoin on the chain, one room at a time</span>
+      </div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div><h3>Picks the coins worth paying for</h3>
+        <p>Thirty thousand launches a day is not a watchlist. TRACE reads the Pons v2 factory
+          straight off the chain and follows only the ones already getting <b>real transfers and
+          real holders</b> — ten at a time, replaced as they cool.</p>
+        <div class="vis" data-vis="1"></div>
+      </div>
+      <div class="step">
+        <div class="num">2</div><h3>Counts who is posting about them</h3>
+        <p>Every five minutes it asks X who mentioned each coin — by <b>contract address</b>, or by
+          ticker together with the chain. Every counted post keeps its id, so <b>every number
+          here opens back to the original</b>.</p>
+        <div class="vis" data-vis="2"></div>
+      </div>
+      <div class="step">
+        <div class="num">3</div><h3>Says one word when it gets loud</h3>
+        <p>Quiet, warm, or spike, against what a coin <b>that age</b> normally gets. Spike means
+          three times normal, at least five posts, out of cooldown. No target, no score, no buy or
+          sell — every number reproducible from the rules.</p>
+        <div class="vis" data-vis="3"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXAMPLE -->
+  <section class="sec" id="example">
+    <div class="sechead"><span class="no">02</span><h2>One real <em>example</em></h2>
+      <span class="note">9 Sep &middot; 316 posts read &middot; 107 counted &middot; $0.14</span></div>
+    <p class="lede" style="margin-bottom:20px">A token deployed on Robinhood Chain. Every
+      five-minute window of its life, counted. The dotted line is what a token that age normally
+      gets — the number the multiplier is divided by.</p>
+    <div class="plot">
+      <div><svg id="chart" viewBox="0 0 660 250" role="img"
+        aria-label="Posts per five-minute window from launch against normal for a token that age"></svg></div>
+      <dl class="side">
+        <dt>Peak</dt>
+        <dd><span class="big n" id="kRate">0</span>
+          <div style="color:var(--dim);font-size:12.5px;margin-top:5px">posts in one five-minute
+            window, at <b style="color:var(--txt)" id="kAge">—</b> old</div></dd>
+        <dt>Against normal for that age</dt>
+        <dd><span class="n" id="kMult" style="color:var(--red);font-size:20px;font-weight:500">—</span>
+          <span style="color:var(--dim2);font-size:12px" id="kBase"></span></dd>
+        <dt>Voices in that window</dt>
+        <dd><span class="n" id="kAcc" style="color:var(--txt)">—</span>
+          <div class="dots" id="kDots"></div></dd>
+      </dl>
+    </div>
+    <p class="reading"><b>Read it left to right.</b> Two minutes after the contract exists, thirteen
+      people are posting. At eleven minutes the room hits fourteen posts in five minutes from eleven
+      separate accounts, against a normal of 1.55 — that is <b>nine times</b>, and that is the whole
+      alert. By minute thirty it is over. A chart of the price would still be drawing its fourth
+      candle.</p>
+  </section>
+
+  <!-- DESK -->
+  <section class="sec" id="desk">
+    <div class="sechead"><span class="no">03</span><h2>The <em>desk</em></h2>
+      <span class="note">what the instrument saw that day</span></div>
+    <div class="win">
+      <div class="bar" role="tablist" aria-label="Desk panes">
+        <span class="lights"><i></i><i></i><i></i></span>
+        <button class="tab" role="tab" id="t-feed" aria-selected="true" data-p="feed">feed</button>
+        <button class="tab" role="tab" id="t-age" aria-selected="false" data-p="age">normal by age</button>
+        <button class="tab" role="tab" id="t-callers" aria-selected="false" data-p="callers">who shows up</button>
+        <button class="tab" role="tab" id="t-method" aria-selected="false" data-p="method">method</button>
+        <button class="tab" role="tab" id="t-money" aria-selected="false" data-p="money">money behind it</button>
+        <button class="tab" role="tab" id="t-cost" aria-selected="false" data-p="cost">cost</button>
+      </div>
+
+      <section class="pane" id="p-feed" role="tabpanel" aria-labelledby="t-feed">
+        <p class="lede" style="margin-bottom:16px">Ten tokens on Robinhood Chain, one day, as they
+          came off the Pons v2 factory. <b>316 posts paid for, 107 counted.</b> Not a buy list — a
+          record of the instrument working. Three of these counted nothing at all.</p>
+        <div style="overflow-x:auto"><table><thead><tr>
+          <th>Token</th><th class="hide">Read</th><th>Counted</th><th class="hide">Accounts</th>
+          <th>Busiest window</th><th class="r">vs normal</th><th class="r">State</th>
+        </tr></thead><tbody id="rows"></tbody></table></div>
+
+        <div class="subhead"><span>The <b>209 we paid for and did not count</b></span>
+          <span style="margin-left:auto;text-transform:none;letter-spacing:.02em">real posts,
+            real reasons &middot; click to open</span></div>
+        <div class="rej" id="rej"></div>
+        <p class="note" style="margin-top:12px">This is where the money goes and where the number
+          stays honest. A ticker on this chain is also a NASDAQ symbol, a REIT, a Solana coin and,
+          twice that day, somebody posting our ticker over <b>somebody else's contract</b>.</p>
+      </section>
+
+      <section class="pane" id="p-age" role="tabpanel" aria-labelledby="t-age" hidden>
+        <p class="lede" style="margin-bottom:16px">A three-minute-old memecoin has <b>no normal of
+          its own</b>. So it is measured against what a token that age gets — one curve, the same
+          numbers for every coin.</p>
+        <div class="two">
+          <div id="curve"></div>
+          <div>
+            <dl class="spec">
+              <dt>before</dt><dd>this token, vs what <b>this token</b> usually gets</dd>
+              <dt>after</dt><dd>this token, vs what <b>a token this old</b> usually gets</dd>
+            </dl>
+            <p class="lede" style="margin-top:16px">Attention falls about <b>thirtyfold</b> between a
+              token's first twenty minutes and its second hour. A coin's own past <b>is</b> its old
+              age — thirty times quieter than its youth, and useless as a yardstick.</p>
+            <p class="note" style="margin-top:12px">A bucket says nothing until twelve observed
+              windows stand behind it.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" id="p-callers" role="tabpanel" aria-labelledby="t-callers" hidden>
+        <p class="lede" style="margin-bottom:16px">Sixty-eight accounts wrote something that
+          counted that day. <b>Nine of them turned up on more than one launch</b> — and those are
+          the ones worth a mark. Not a follower count, not a score: how many of the watched tokens
+          they posted about, how early, and how often they were among the first three voices.
+          A red edge means <b>on the list</b>, and it changes nothing — the detector never reads
+          this table.</p>
+        <div class="rej" id="callers"></div>
+        <p class="note" style="margin-top:12px">Computed by <b>python -m trace.callers</b> from the
+          same database the counts come from. Nobody is added by hand and nobody can buy a place,
+          which is the whole reason it is computed instead of curated.</p>
+      </section>
+
+      <section class="pane" id="p-method" role="tabpanel" aria-labelledby="t-method" hidden>
+        <div class="two">
+          <dl class="spec">
+            <dt>window</dt><dd>300 seconds, aligned to the epoch</dd>
+            <dt>rate</dt><dd>posts in the last <b>complete</b> window</dd>
+            <dt>baseline</dt><dd>its own six windows, or normal for its age</dd>
+            <dt>multiplier</dt><dd>rate &divide; max(baseline, 1.0)</dd>
+            <dt>floor</dt><dd><b>5</b> posts in a window</dd>
+            <dt>cooldown</dt><dd>30 minutes after a spike</dd>
+          </dl>
+          <div>
+            <div class="states">
+              <div><span class="st WARMING">warming</span><span>the window was not observed, and no baseline of either kind</span></div>
+              <div><span class="st QUIET">quiet</span><span>under 1.5&times; its baseline</span></div>
+              <div><span class="st WARM">warm</span><span>1.5&times; or more, too thin to call or still cooling</span></div>
+              <div><span class="st SPIKE">spike</span><span>3&times; or more, at least 5 posts, out of cooldown</span></div>
+            </div>
+            <p class="lede" style="margin-top:16px"><b>An unobserved window is missing, not zero.</b>
+              The terminal would rather say nothing than call a window quiet when it wasn't watching.</p>
+          </div>
+        </div>
+        <p class="lede" style="margin-top:20px"><b>$TER returned 36 posts and none were ours</b> —
+          TER is Teradyne, on the NASDAQ. A post counts only if it carries the contract address, or
+          the ticker plus the chain; never if it names a contract that isn't ours, or was written
+          before ours existed.</p>
+      </section>
+
+      <section class="pane" id="p-money" role="tabpanel" aria-labelledby="t-money" hidden>
+        <p class="lede" style="margin-bottom:16px">Counting how many people are talking is half a
+          question. The other half is whether any of them has money on it. On pump.fun — which
+          carries Robinhood Chain as its own network — every caller's stake is public, so we can
+          answer it. <b>Handles and exact figures withheld:</b> these are other people's positions,
+          shown here as shape, not as a leaderboard.</p>
+        <div style="overflow-x:auto"><table><thead><tr>
+          <th>Account</th><th class="r">Position</th><th class="r hide">Put in</th>
+          <th class="r hide">Entry</th><th class="r">Result</th><th class="r">Posted</th>
+        </tr></thead><tbody>
+          <tr><td class="id">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</td>
+            <td class="r n">$15,220</td><td class="r n hide">$1.0k</td>
+            <td class="r n hide">$1.7M mc</td>
+            <td class="r n" style="color:var(--lime)">+$17,900</td>
+            <td class="r n" style="color:var(--dim2)">12h ago</td></tr>
+          <tr><td class="id">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</td>
+            <td class="r n">$8,347</td><td class="r n hide">$1.0k</td>
+            <td class="r n hide">$1.7M mc</td>
+            <td class="r n" style="color:var(--lime)">+$2,823</td>
+            <td class="r n" style="color:var(--dim2)">11h ago</td></tr>
+          <tr><td class="id">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</td>
+            <td class="r n">$6,258</td><td class="r n hide">$10.3k</td>
+            <td class="r n hide">$4.1M mc</td>
+            <td class="r n" style="color:var(--red)">&minus;$3,980</td>
+            <td class="r n" style="color:var(--dim2)">11h ago</td></tr>
+          <tr><td class="id">&#9679;&#9679;&#9679;&#9679;&#9679;</td>
+            <td class="r n">$4,505</td><td class="r n hide">$22.3k</td>
+            <td class="r n hide">$2.9M mc</td>
+            <td class="r n" style="color:var(--red)">&minus;$747</td>
+            <td class="r n" style="color:var(--dim2)">11h ago</td></tr>
+        </tbody></table></div>
+        <div class="reading" style="margin-top:18px"><b>$34,330 behind it, four accounts holding.</b>
+          Fifteen posts from people with nothing on the line and fifteen from people with thirty
+          thousand dollars at risk are different events, and now the difference is a number.</div>
+        <div class="two" style="margin-top:22px">
+          <dl class="spec">
+            <dt>not a source</dt><dd>the callouts <b>are</b> X posts &mdash; already counted. Adding
+              them again would double every rate</dd>
+            <dt>never a verdict</dt><dd>pump.fun <b>pays</b> for callouts, so their count is bought
+              volume. A number you can buy must not move a state</dd>
+            <dt>no stake, no row</dt><dd>a caller with nothing in the coin is dropped on the way in</dd>
+            <dt>labelled</dt><dd>stored as <b>source = pumpfun</b>, because this is not an API you
+              can run yourself</dd>
+          </dl>
+          <div>
+            <p class="lede">A test takes the same window with <b>$0</b> behind it and with
+              <b>$9,000,000</b> behind it and asserts the state and the multiplier come out
+              identical. The money is reported beside the verdict. It never becomes one.</p>
+            <p class="note" style="margin-top:12px">Same guarantee the public account list has, for
+              a sharper reason.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" id="p-cost" role="tabpanel" aria-labelledby="t-cost" hidden>
+        <div class="two">
+          <dl class="spec">
+            <dt>$0.15</dt><dd>per thousand posts read. The official X API wants <b>$5.00</b></dd>
+            <dt>15 credits</dt><dd>minimum per call, <b>even an empty one</b></dd>
+            <dt>300s</dt><dd>between rounds, landing just after a window shuts</dd>
+            <dt>1 window</dt><dd>is all a token asks for the first time it is polled</dd>
+            <dt>hard stop</dt><dd>the budget <b>ends the loop</b>, it never thins the stream</dd>
+          </dl>
+          <div>
+            <p class="lede">Polling faster than the window cannot change a verdict — the detector
+              only rates windows that have already shut. Ten tokens once a minute costs
+              <b>$2.16 a day</b> before anybody posts a word. The same ten, once per window,
+              <b>$0.43</b>.</p>
+            <p class="lede" style="margin-top:14px">Every request lands in a <b>reads</b> table with
+              what it returned and what it cost, so the bill reconciles against the provider's own
+              dashboard line by line.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- BOOKS -->
+  <section class="sec" id="books">
+    <div class="sechead"><span class="no">04</span><h2>Your <em>books</em></h2>
+      <span class="note">the half nobody builds</span></div>
+    <p class="lede" style="margin-bottom:20px">Every tool on this chain shows you a chart. None shows
+      you what <b>you</b> did. Paste an address and TRACE reads its swaps straight from a public RPC,
+      in your browser, and keeps the accounts a trader actually needs. <b>The address never reaches a
+      server</b> — there is no server for it to reach.</p>
+    <div class="two">
+      <div>
+        <div class="addr">
+          <input id="addr" placeholder="0x…" aria-label="Wallet address" spellcheck="false">
+          <button class="act on" id="addrGo">Read</button>
+        </div>
+        <div class="note" id="addrOut">Stage 6. The browser-side reader exists and runs; it is not
+          wired into this page yet.</div>
+        <dl class="spec" style="margin-top:18px">
+          <dt>in / out</dt><dd>the two numbers, side by side, over thirty days</dd>
+          <dt>opening tax</dt><dd>what Pons took on early buys, off your own transactions</dd>
+          <dt>closed green</dt><dd>not how many are green now — how many you <b>sold</b> at a profit</dd>
+          <dt>where you left</dt><dd>cost, the highest it reached while you held, what you sold for</dd>
+          <dt>the mirror</dt><dd>at what multiple of normal you tend to <b>enter</b></dd>
+        </dl>
+      </div>
+      <div class="cal">
+        <div class="calhead"><b>Your trading month</b><span>realised, by day</span>
+          <span class="ex">example until you read an address</span></div>
+        <div class="dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span>
+          <span>S</span><span>S</span></div>
+        <div class="grid" id="cal"></div>
+        <div class="calsum">
+          <div><div class="k">Days traded</div><div class="v n" id="cD">0</div></div>
+          <div><div class="k">Green days</div><div class="v n" id="cG" style="color:var(--lime)">0</div></div>
+          <div><div class="k">Best day</div><div class="v n" id="cB" style="color:var(--lime)">0</div></div>
+          <div><div class="k">Month</div><div class="v n" id="cM">0</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOKEN -->
+  <section class="sec" id="token">
+    <div class="sechead"><span class="no">05</span><h2><em>$TRACE</em> and what it will never do</h2>
+      <span class="note">the terminal comes first</span></div>
+    <p class="lede" style="margin-bottom:20px">There is no token yet. When there is one it will be
+      said here, in plain words, before anywhere else — and <b>nothing on this page will change
+      because of it</b>.</p>
+    <div class="two">
+      <div>
+        <div class="never"><s>&times;</s><div><b>Never a presale</b>
+          <span>No allocation, no private round. If that ever changes it is announced here first.</span></div></div>
+        <div class="never"><s>&times;</s><div><b>Never a buy button</b>
+          <span>Not for $TRACE, not for anything the terminal watches. No link pre-fills a swap.</span></div></div>
+        <div class="never"><s>&times;</s><div><b>Never paid placement</b>
+          <span>The moment a row can be bought, every other row on the page is worthless.</span></div></div>
+        <div class="never"><s>&times;</s><div><b>Never signs anything</b>
+          <span>No wallet connect for writes, no private key. The RPC client refuses any method that
+            could broadcast a transaction — a list in the code, not a promise in a document.</span></div></div>
+      </div>
+      <div>
+        <div class="stage"><span class="i">01</span><span>Watchlist</span><span class="s d">done</span></div>
+        <div class="stage"><span class="i">02</span><span>Collector</span><span class="s d">done</span></div>
+        <div class="stage"><span class="i">03</span><span>Detector</span><span class="s d">done</span></div>
+        <div class="stage"><span class="i">04</span><span>Public snapshot</span><span class="s d">done</span></div>
+        <div class="stage"><span class="i">05</span><span>Attention front end</span><span class="s o">open</span></div>
+        <div class="stage"><span class="i">06</span><span>Wallet front end</span><span class="s o">started</span></div>
+        <div class="stage"><span class="i">07</span><span>The mirror</span><span class="s o">open</span></div>
+        <div class="stage"><span class="i">08</span><span>Money behind it</span><span class="s o">started</span></div>
+        <p class="note" style="margin-top:16px">Open source, MIT. Run the collector on your own key
+          and check every number on this page against your own bill.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>TRACE &middot; read-only terminal for Robinhood Chain</span>
+    <span>chain id 4663</span>
+    <span>open source &middot; MIT</span>
+    <span style="margin-left:auto">attention figures measured 9 Sep 2026 &middot; ledger figures are an example</span>
+  </footer>
+</div>
+
+<script>
+var D={"win":[{"m":1,"r":13,"a":9,"b":0.0,"k":null,"x":0.0,"s":"WARMING"},{"m":6,"r":11,"a":7,"b":0.0,"k":null,"x":0.0,"s":"WARMING"},{"m":11,"r":14,"a":11,"b":1.55,"k":"cohort","x":9.0,"s":"SPIKE"},{"m":16,"r":3,"a":3,"b":1.55,"k":"cohort","x":1.9,"s":"WARM"},{"m":21,"r":1,"a":1,"b":0.25,"k":"cohort","x":1.0,"s":"QUIET"},{"m":26,"r":3,"a":3,"b":0.25,"k":"cohort","x":3.0,"s":"WARM"},{"m":31,"r":2,"a":2,"b":7.5,"k":"own","x":0.3,"s":"QUIET"},{"m":36,"r":3,"a":2,"b":5.67,"k":"own","x":0.5,"s":"QUIET"},{"m":41,"r":1,"a":1,"b":4.33,"k":"own","x":0.2,"s":"QUIET"},{"m":101,"r":1,"a":1,"b":0.0,"k":"own","x":1.0,"s":"QUIET"},{"m":116,"r":1,"a":1,"b":0.17,"k":"own","x":1.0,"s":"QUIET"}],"rows":[{"s":"ROBINHOOD","a":"0x008df4b3","p":101,"c":25,"ac":18,"pk":2,"x":2.0,"st":"WARM"},{"s":"HODLster","a":"0x31a068ea","p":84,"c":53,"ac":33,"pk":14,"x":9.0,"st":"SPIKE"},{"s":"Fork","a":"0xa5fd8111","p":20,"c":13,"ac":10,"pk":6,"x":3.9,"st":"SPIKE"},{"s":"ROB","a":"0xd479edd5","p":40,"c":7,"ac":6,"pk":1,"x":1.0,"st":"QUIET"},{"s":"TRADE","a":"0xfde467e5","p":14,"c":3,"ac":3,"pk":2,"x":1.3,"st":"QUIET"},{"s":"AIP","a":"0x9ff29623","p":8,"c":3,"ac":3,"pk":2,"x":0.0,"st":"WARMING"},{"s":"ROBOSHARE","a":"0xabd8d227","p":3,"c":3,"ac":3,"pk":1,"x":1.0,"st":"QUIET"},{"s":"TER","a":"0x0d662200","p":39,"c":0,"ac":0,"pk":0,"x":0.0,"st":"WARMING"},{"s":"STAG","a":"0xb638ff4b","p":7,"c":0,"ac":0,"pk":0,"x":0.0,"st":"WARMING"},{"s":"GROK32","a":"0x157884f6","p":0,"c":0,"ac":0,"pk":0,"x":0.0,"st":"WARMING"}],"rej":[{"h":"memecoin666_","nm":".","av":"data:image/webp;base64,UklGRvoAAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INwAAACwBgCdASowADAAPrFKn0snJCKhrjQLMOAWCWcA0u2vg/PKlar+I6B5fxCuyJTT1Rs1r6SVtGxOO97vlDaekAD++gKAmuMUKjX9JZkWDhCQfC+q3JGXXUQToJt9HxlhRJH7G5v1QR3P+iEaPBVrDqDaxa+gHD5yqdio8l64cuiuub++hkOKrBcH2vodDuWLCzvRER1B+3C3NN+mNV4ul2XxqwjpejjlI142pDWLQd9+sgL7V56/qCMdsWuw074dN+cUxtOLg73/Jce8M5dTxEfcJ4vzRmJL5zuJAAAA","sym":"HODLster","why":"different contract","x":"KOLs are in: $HODLster on Robinhood\nMC ~$34.1k · 46 holders\nCA: 0x974e57201b50f01c8456979280c4393af74c39ec","u":"https://x.com/memecoin666_/status/2097653366642106440"},{"h":"dexliveevent","nm":"Dex Live Events","av":"data:image/webp;base64,UklGRhIEAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IPQDAABwEQCdASowADAAPpE6lEmlo6IhPHv4ALASCWwAnTKEfjSIrI1two8IDb8XZHvPH+ctATdziL5PfYkYM4Dpm7wZQPAbSRzS/G59X+wT5avsO9FAnNnv9FaDrnQXKvUcF+snp9TMRLgl201CPEpG5xfN3L/wOQuSRTvdxfTjAVSC+6peHSIZcClN+VYmGe1ysNLhzpiAAP7MEXiqP7D4cXmD5B2gng/c5EgrCzagPHQznKGSi5NmEOaMPKM5y6t2Ms8vpKhij+Z5aBlAJk3CpMeMmZIkUMWXk2jyZpTzKp/Ae/YspqvByqr+VOYk5NIYrOqOgDsdB84+NHOisPWSAGpzXlOG09c7HbPViOWHTRBG3sFQunP8KluEJtzEoaMMdHgVls9V4YZAmfI27lKgxlyQTYIAGK2dmrcUILWamYn8NtYLt2GiU60+KeTfYfUQsJuXpFmVVI7De1OO/whiLhD8QkMYHckSx6IK988eXRTKYNcBIolQ2ZJuS7KtD1j3Y9sARklT8+R4IC/jJgGpm/G9/DHeXzZbfO7zyufuN9AJwlBROqQl1WjOFdP54ecb8zaz/97TvbyfsT9AcTIfNALgxDu08elcbPrCOWh2ab7LIxlP1GE0K7WIHlsUGxpXtp1O4MawlyLJe9xK0n8LRZGhqIqwsvqGobndxGC9d2S4YhcoMJhTORt3CPSgXxX3UK3BV6u1nF4geuthCtsV2EkbMmXWEu8qzoCWsB7t8M3+J6KaLbz9FYledGDjFRsCjML53AC9lfoN8HWOPAo5LEW6XfgGpb1Eq8KGOElG1l6mkd1ZJ2shqdynr4DXrNoMbjD/uzoLD/todWDK+Aok3iYz9FqgKmgx2TDwkS39hB4vwssodlfZ0anm6xD5nvpczgGexXDatGPYXp+ru1tA8MdmCipTLQPj+w40/M8EATumLxLYHCCXNmVKj5ESNU4rD0++giytlwvHsILnIEla4mow8i7lseANPZnuGDRJ5lEqUbeV5ia+E2XbEJVtHCgSJDVetsLpA3NudpQ8rjpe1gls7a14q6KfGWGMUSYZsb7aSFigK6CDCvDe+CLOtsRkROcX7GvE0hwWAlyNaHXU3YTUsDpQwZV+EZ2T8JPoN/PsYUb3LwAZ5uP0v/w6/oGbH+sPdLmNG//qe/X6EGkx9p9P7QGEHSXuopLn5A9MdCtJsOhIy+O3jr9BVqnn84nuwjlBezUdWUF8f87dFlTub4tcb3uM/sAvCL6r9xrS32LPdsHjzdpa4C6pfYryLGSjoSGoctCMhkN7S0r5LQpAU8B55YsYX5o2yGlGfsZ0Eodvl6BpjYlsdepyjnbiPUFhgljycAAA","sym":"Fork","why":"different contract","x":"🔶 DEX UPDATE — Token: Fork Epoch Protocol ($FORK)\nCA: 0xe25bcf59ab597ad2dc88d716a2ec23014cd8af93\nChain: #ROBINHOOD · MC: $8128","u":"https://x.com/dexliveevent/status/2097714870749741129"},{"h":"nbd22xdm","nm":"نبض التداول","av":"data:image/webp;base64,UklGRtIBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ILQBAAAQCwCdASowADAAPrFQn0wnJKKiJzgMkOAWCWIAzHkROoCqBlgaWhnJSj+BRC6uMX30v2Z13ZbcML/2yn0Hmgv5PlltNWo93KnCx6drAGWviABdslokaPwv4hXNPSMLy04AAP79AbmfBCPpgK5qwS+LPnLR6I2n6R7/XdezmlJ2wwT4/CDY8mLuB0+2xW/CeAgwXF2fN1zE53qDvqU6ONyhIOpjulCQsrXNaXpy36cOTcUxk3hCx0AVBfBBZ1sbrBAD0LuXrYrvvsuRr7mqANG5S71JwltHtmEdgdi/K1K3f6yRbABwin3P3z/hYcBYNf5n3ICx1zxs5ETjZ6DxIjOgArXxuxmdSyzC/V9dQmSwkxK7WV2WaP3SHspsZL8Hs2i22BYqT3mGxKqxSKmodMdPvKbNfoWchGLeMCeZtRY15EXAmwH+ODaFWD745DZLgbSaOw0rwBkbZ5QIwFIXggPRlIxgnJWuSMqd5aV0n0UDfdEVAijqhKc+0Es3sla81I8zPOYmQjV8DYm/EyCp4KIp1ZAjQpt98Q4rxKXu4BmKkIJW5aqUber/yNgRLcC/Lttk4AAA","sym":"TER","why":"$TER is Teradyne, NASDAQ","x":"من متورط في سهم $TER 📉\n\nيرسلي الان وابشر بعلومك","u":"https://x.com/nbd22xdm/status/2097674718505521523"},{"h":"carlosmendez_xz","nm":"Equity Research Analyst","av":"data:image/webp;base64,UklGRpwDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IH4DAADwEACdASowADAAPqE4l0mmIyIhNV1aqMAUCUAU6bG6wriiSJ2ofR/xP8x/DX7Zj+0nb5/wByXb0HBLSm5i/+J9FrPW9WewP0qFKrUZM80jq4/bhtVxI7hnrlj5MGWvQuSYwtSwf+2ryTpFRa0lEPs+LPUO7OxX5bN6sIkHyR6NK671jOHUrB3EFjv/3NoVvcAA/v7NoR3ieWhvc5Zc4kHaBOp2XIWfk3D57J3Pm/jPKlnYLtzPiwgPDEXBuprzyGi2U/SlOwB+FXVhT6403Rul2Ynkvmd61V/akzJzIQLIWS0g8QFw8s1oVimW66E2MLTaLV/LY/f4kSWjkhCPy5NUHziMhAZPFzz7HnpPS5MXXMa/Ayv2LTmxvpPCr4ZNc4RBpDluL6y+M/5aV5LG/+qvZbYQcDZv1KO9uwXNTgTPhX+/LVGyIjoSF+p+fViW0GyF5Ioxmobc+dRN0j8qJXOwUN+Gfitk9mf2YSGcSpsQgVAIzvczQ3uiDr4634IIOIMtf7R/s0NWsc+4I0fOB+4J/Q1jhRZwTnPxDESsx/yYjB42zsp3tVVhABJnNNDaPl9hQexyfyAu5oTMlNPsK43irDpRQMXFL3nf61b4085A5dmrltxDondVX1lt9rupDlHIeokPXhqFGdRBP9NvYs5HAnmXX5LZCHSIEfYVpjJ33SEYlmZbUiYx509pGeNTfMXLHttgcN69NZqKHot1PMzjM7/umB49e8tfCTrKk/5q5GR5ACM5VQTa8UZvbdELL7ZwBNGDrXosDzHdUCugvDQaHoRdcH/kg9yxjGEJuGBKb/TVlsdAG6HmWxC+VfCVAJxXJwsB4/eDqQS3cXxUb9FQJb21mfe0FhQwMlckGoKM3QvaVIU+A6t6n8T6VduvYRvHpHFPF5vrOwDTN++M8r96hZodOeJcKVpu+o7u5+inF05v/lCxSTzt+yNX4M/85iR/pyXjiCMMexIQ9THbfIsnNR/RbhsrJjSfz6CzAGO3NgOOv3GR+o3/AHFaLsPZ0beOIbTEJM8GZAzpu/E6IMP8SEO58HW/I/YvmF8CcmlVYwxrCVBsla13lb+lNx1kuHLaGVa8uTBXpgpeA4LU7mWfoUc4dAIR8MR/IIAtj7p0jcCl1+xKPkA5rLDR5RMSQNkO/eNvr3tfhUXrD5otkmesDRcqlPDGl49z+0AAAAA=","sym":"STAG","why":"$STAG is a NYSE REIT","x":"If you hold the following stocks, be sure to follow him:\n$STAG $SO $NKLA\nHe turned $2,200 into $47,000 in three months.","u":"https://x.com/carlosmendez_xz/status/2097671749081162231"},{"h":"dexvoteteam","nm":"DEX Votes","av":"data:image/webp;base64,UklGRkYCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ICgCAACwDACdASowADAAPrFWoU4nJKKiI4oA4BYJaQATz79w6GvykfkfgK4HMbW4LGB52v+55L/of2C/5P/Zv+F15kwRJ+jKdGwajfHLSvFyI9V6vtNvClr1MVYw3atdNhb8vb9pjO+gaxwQQVAVkIlQAAD+/ob2PGcsq2QffXgmj3zbl/WbvPL74pH02q9kjT1AJnKDqMvzsLH78Df++4VB9+xhXAGvxMRzol05iFP8FsNw2jAclw4pxU32GDV1MDlcGhIpcHpRP4X6GWLJ8cstWM95kGPqxoRjZ5EraRZhhv78MWdz/v/l8G0QD66gFJfIMwGEaslk9Iaz/tjVSRxa4aILDj5xXqO90R04t/EUX7BWD4p6NnDufd3Lv5tibR1xI27UFaytiTYzAi7hhNUUqxPO+YGK0WU8r4behP3kTOqF5+1j8+CGeYK0H/73G5LCQrvrD64gufVXaiatpFT65W2sS1BMD9/IxUozGnjtS9g3ns13xE7Nasw8l/94EMVQjVaKwIO6hPHfJ2+DuMcp9mi7/KYAmdu59vsB5tpsg8/H/ptWDXIvgdz3nguf7xZxUetqNtTfMayLA9dF4G9B3GahOvnyQCuPb3cpb4x54ffLZM9oALkWGp2RNDZDH9Wv4hLf4LH8vZ6ZRcbIBp3RMg0c4FGAeJPfq17/W61oNaMixyqTKGprPCDOu5nEOOY6Riph8qgQO+TW3HORzPxicsrvzUhzPmAAAAA=","sym":"HODLster","why":"a Solana address","x":"Its time 👀\n\nVote For $HODLster 🗳️\n\n5aUPVZPSvVKoCsp1rHCn7RE8s6zYFPhvUkFaZ4Z1cr4C","u":"https://x.com/dexvoteteam/status/2097654650300506379"},{"h":"bullhooves","nm":"Disbelief","av":"data:image/webp;base64,UklGRsoDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IKwDAACwEACdASowADAAPp0+mkmloyKhNVqtULATiWwAnTLexhELwGv64GG2O3HG8W7yf/j69x/AeCvjbCDXE70ZWfAbSKTR/HL9ZewZ0k/QgdCV7z+FUZf6QWxbW7sj0rziouOI1P6wztrKheonqcZMsiR2fSczg2vus5Myc9XJwWdrDqtQh3+dSawy92gAegsAAP799smotlF0/L27eBpoR33wbPRKwQ+/08Pel9z49UwUjPphpNyy9SbtyZ1FG9PsJwCskK20fxmQrKVtOvTVllGQ4LD5AtdTEEDUG3uDMVQ8/4NkM2xtW801l/cHPkWIlJQvfMs4Q4/7J/b/sWJDh2978ryvSS+bCMhjYFRpYQ6dnupeNtabFmFqxjC5eGJS+RpStZ5FZZOXxp5KoTWmgWax5PTPs1hrNp+UiUGToO4CE0a8T8AHwb3SHQDT4BYbJrPLrsb8wEsvLc25oLYk9Irv05/NbY/jG9TOWOnzcGD9xFvYcp8Q2Zkj7UT6CaS4dBO8645cW4CuoA4g/ldv1Q+5+l1VK71GpyCgf9ZeAhIvX4v0OfuIuBDnTYm/AZ7bvtj4I8Pxp0MYt5xM1noZSEPsGFh9SHbCz0yWHXqFCeADoERilCVR5EcE3rcvcV9pwUA8CJZ+ambF9QR3Rkavy9/Omy3jIQcZilpiFgdSewMpXeZ0n5l/4dPxoh31uMdquJPuy5KqSW/ugQAwKSCzkJkEpkqSK6JMG04m5t0Y5xfxQC/UFiYE9yD5RtMawe45R6b8Akd5iqwRQh0U9s1gNwS0MtwbTIGANZ6YCLH+1tmldZmt+QftYjaZ/0iXXJuTdfZlUFdZT2vZfS+3F8M9OzKAZ+w9rleEob4Ne5Rg+zh79kikRsmyETTG4//DXLTDnFdNbL2zjiep5+E20MC2SIVUQLSRuYzLCPGbOLV8syHImCkePIN3G57bHIMe7Yi6t1Ckg1Mivffs0zgwZ/JBBN5jQzBqZOksWFtv+nU54K0uoJLC+Sm+hTo+V/9VYzp/0uJB4+QDgWtkpehhwhkJCZpFGpX5RFRMd+0toufgvJ9Kdx7lMjAq6enS+W+rwXAR663vpRUuig3/YkevPblTnIDvbklK3YujiNjp4rzeohho8E5PcjUn35UJebnR7GI4YlGJceC754SbtNer4t3pkh8NRI+ai8l/0G3yY5PV0Uoxr51rd5uvcUe5ej5YTVsMuAxRo0ARkJSuRfUzk3W8xJbUlCVdXKMZJwNkAAAA====","sym":"AIP","why":"posted before it existed","x":"$AIP zero technical support. Price below all moving averages except the 8 EMA.","u":"https://x.com/bullhooves/status/2097379934889013688"}],"coh":[{"l":"0-5m","lo":0,"w":10,"n":null},{"l":"5-10m","lo":5,"w":10,"n":null},{"l":"10-20m","lo":10,"w":20,"n":1.55},{"l":"20-40m","lo":20,"w":40,"n":0.25},{"l":"40-80m","lo":40,"w":80,"n":0.1},{"l":"80-160m","lo":80,"w":160,"n":0.04},{"l":"160m+","lo":160,"w":205,"n":0.08}],"tot":{"paid":316,"counted":107,"requests":254,"spend_usd":0.1424},"reels":[{"sym":"HODLster","day":"9 Sep","ca":"0x31a068ea5668027afc7ed6c22422681458bbd7d5","win":[{"lb":"11:45–11:50","r":13,"a":9,"b":null,"x":0.0,"s":"WARMING"},{"lb":"11:50–11:55","r":11,"a":7,"b":null,"x":0.0,"s":"WARMING"},{"lb":"11:55–12:00","r":14,"a":11,"b":1.55,"x":9.0,"s":"SPIKE"}],"seq":[{"h":"bitecong","nm":"Green onions","av":"data:image/webp;base64,UklGRpgDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IHoDAAAwEACdASowADAAPqVAlkmmI6GhMcwAwBSJbACdMoR2j7B5glhbE8byu96s9uJ40HrgabBvQVmCbSvs3gPXB9JbUZa+lKZz9ALbQFC2NRF7QJP1736D0tNU68EUebB+uFXYHRrtB9g3o2DYqXsgQDshrMy+aROybT9SlgYY1YL+k9xLR1EWUVc2EgAA/q1z4+tZrh3EXXiPyYuy1Lx2hx0/+X6z/iHo1OQkPqWEOlDXbZ69jjL6UtqC5NZNsTJEM539/ZWwLmf0whwb7MV2m//rn+Z3E3uf4O3w/2rR+r0ObYB60Sk/+YDlU92ktQ+1C0ia+XjTZK9fjERqVpMVa28bDEobidnBrOzMQdn6etTa5cJ6M2QWCm8EXRBRb+YIVqOnDVGWOevOXYen+kPBWEOLBrvC7MVJAfsB+zq+dgbedFau8K6Obg8/3z3LBi/hqtasI24OiP7k+xHob5rCnHNvgc87nHAgdpvSi6a13WaHACAWb6tDpafV3LKJ8+yy8ObNYw357/UBCBNEAOGUK3qYMfMiXlcxLrjFi1jltRhfAgyh4ByzeoDVvFdhLijpt2OI/cexNGXv46p7BYeSkrNt4HtElqOnKlXCJp0Pn0XlXWYTOADIpB+B7qp1a8EAsTwo+Hs6AElqXPmcJl+J2AyktdJrnJcpt7B7W36CPSMubb4Zw7OQP2Wf585SWXxiUbOGxq1pLaH2i4G4XUeTzclpdMnW1yBAErly+RQlq48IW/n/ARZkS6XiCcbJoc4t0kL5fETDw0YjIo+ZvuIcNu1Hv+5lcndr/Y/ZRTpVZ7nqrjo0iW0G3zOIG66FbXVBEF39EBC1TGpZDnSMhG0MhT3ragVRPgbty2e/AErG0OH22rqTyk554qQmUv/8x8wNJgZuwaeBaQsAjR25XfGab8tiJ/4S+ksEWyyeCnl2IBAJ51F+cfiQTu/KgXSXbvfmiKnBhH2PgoAFC55m8Iv3J0Lb/dJNR0p9OjS96VjN5vYT8Yz/hRqFpvzQ4r+6mAPv+amV2NyZhF2/NScoNXkcvsU8yp1vvRGVcGSv/jdpnN9PP96mhM35XiB80/T3emm2HN2WrugG7HqubTwQjx1osjyvO2xEmdwC+yeWHGyuPlo3My9BPIUbubcGoHGe76dJrNNx0HF+CVdjIszNatLXkfa2zItvJbzrFxoAAA==","t":"11:46:36","hit":true,"m":"address","x":"🤖 AI信号 (RBH) ⚪ 观望\n📌 HODLster Cult ($HODLster)\nCA: 0x31a068ea5668027afc7ed6c22422681458bbd7d5\n💰 MC: $45,816 | 流动性: $14,048","u":"https://x.com/bitecong/status/2097652891410698597","w":0,"L":0},{"h":"shdow_sol","nm":"SHDOW 💎","av":"data:image/webp;base64,UklGRrAAAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IJIAAACQBQCdASowADAAPrFQoUunJKMhqrqpWOAWCWcAyRApt8zCtxGUPtab9/jpT9F7PZslIS09AAD+9vDwyZi+10sHfrufD8fH5V2W6G+R/URjH95XyeciwpSTtgkbDN/ZjADRQ8KJXWHkVoIJ3fhgFksCeo/ChKJRQzXRZk1I4gGbftTNGfOMKvqBjMNMTE+Db/YAAA==","t":"11:46:45","hit":true,"m":"address","x":"Entry Ca;\n0x31a068ea5668027afc7eD6c22422681458bbD7d5","u":"https://x.com/shdow_sol/status/2097652929721225281","w":0,"L":0},{"h":"trendscanai","nm":"TrendScan AI","av":"data:image/webp;base64,UklGRtgBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ILoBAABwCgCdASowADAAPrFWn02nJKKiJzgJIOAWCWUA0TO/zceCttWszjxxJgH6qqFYbG8m0cCZQSbLz5bfrkFVu7NIAniVjVy0Xv8wzLEPUawEokxcYmX92Ql6nawwAAD+/ocHrZzOwmNBc5EPx/czFPP1Y9AueAviTPi9bN+sS3nGonLSwSmOBv8ZkZ0rR/aKuH5XjJ1SJWrIc/pbUuRGs9gN6WLuNxaA72xenhGldRSfamEL/jbwpitAydYuu5o7RHGGg8YFQE3vN+cwrHRdkRKNyqUPsXvpWJlmXf/iw3fzQjQ/K48dCFa/5aUm10lTJSNyPb3enE5QdVhNOhHDyL2o46c3QElqakTWZOctr4QZ7h/qhUBGx4gl2wJUdcg/sLKgPCYpp3weOC2gn/okMTGeLGP0IKsluW+3OSJhN02QPP0ZPrVreBGRCCvDzbxy7SghxYX0rX9Npr8fkVrTSnU5BZGSWtE2LjaveKKj9r8KrOVmzXQCSCakXBlfWPvQR8fCEjF0Qg5VCEH+j5VCxUy7zdHlTduOGiFgscQX2AsXGgt05SUtBiQAXBh6amdhP39O47VAofRQ+EAA","t":"11:47:01","hit":true,"m":"address","x":"🚀 $HODLster | TOKEN ALERT\nCA: 0x31a068ea5668027afc7ed6c22422681458bbd7d5\n💰 MC $119.98K | LIQ $26.21K | HOLDERS 271","u":"https://x.com/trendscanai/status/2097652997450871048","w":0,"L":0},{"h":"vantagealpha_1","nm":"Vantage Alpha📊","av":"data:image/webp;base64,UklGRtwBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IL4BAADwCQCdASowADAAPrFUoU2nJKKiI4sA4BYJZQDOdzDOBOmJmk+Pp7kppBPOIzpJi61Tn9t1D+x+k862nZZzQSGWEne69EDbDBKr30iRhLD81Uh7N//bd7IAAP7+h5tW78+odiBHf7y+0P1lw2Kr5GSLpB8JI+yoiogBo9iC8H+q/8bX73+6ynRy9Jw1jK6TPEDcliOhHAchZJgUaNcVtFZwNv3QEH6fvRf5381f2v0vVnMh3AvQo0lWZr4/3/s+xGxf79eDKJdfvqAJvjfKgaEP7GMsK60W80LOeh6BAgGRVMAQsVsWh5GA+NJV2HtfU7RqShRta4STe0tW0x5lT2exJggRoqp4DDfI9O5BbkpoqfdLDPUvG9KrOeRQDpgPX0yR+85gE9ioum4IUXbL12sqzY07K6EfsUDNApTR9mcLp3svWh3/lo2P87nnPeCo8KBkQtRbnTDjh5fzsje0TzNMqk2LUsypcDlpRZihTjt1Zxopah6gYhSoc4HF4L3NIM408QOh8oglHggjfJhkwHFOgZoDC1twVDsyeNEj1y4bP3BLZ88d3U/4l36LbNo3+dw/4Kpu6/duLDAKMAAAAA==","t":"11:47:36","hit":true,"m":"address","x":"CA;\n0x31a068ea5668027afc7ed6c22422681458bbd7d5","u":"https://x.com/vantagealpha_1/status/2097653141294510130","w":0,"L":0},{"h":"solinsidr","nm":"RobinOnSol💎","av":"data:image/webp;base64,UklGRqQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IIYBAAAQCQCdASowADAAPq1Gm0mmI6IhLjv8yMAViUAYwQGNyt/bbkghU/TktrMKSssPsTy1C3K0v3WFJq4ETMB9TchVyZtkuDlkD+QCr7k/HFl56AAA/v63DiUtevj6kMpb8G/j8Ap7Ku+HL7wTHyWp6ybJ8CYS5et5c9t8V+vDnkPVfdlzTJu6oAIcOq3i05Oo/g00HIDZulB/HJhCgi4H5lxpeTLytSB1fbmcS8eAvt3Rc1qvSzxHtpQYVtcKsgwfqN0YFL4lyWNZr9b9eYpBQu0R7u9jmSntq8sUCxqKyEVgiIrpW3eTglzzr8goazxLMSHlyFIamvr878hvSKOLbRywlpDvbc3IivHfk53Oj+BTdwNo3k64kHHFF82iQqzBzV3cVm+QtQQyKKh1kuOvGU79hh8Kfhh4n9j+EWD/H5N8lHMURcm+PAUNgCXAKQ2MXAEyHyrYQGOAP/dVUDZgBdjj2+yjTnvHjNGW/vbUP0snqPpEInNfzmGylYIffWGMtMIdOXAAAAA=","t":"11:48:04","hit":true,"m":"address","x":"Entry $HODLSTER\nCa;\n0x31a068ea5668027afc7eD6c22422681458bbD7d5","u":"https://x.com/solinsidr/status/2097653262606389258","w":0,"L":2},{"h":"memecoin666_","nm":".","av":"data:image/webp;base64,UklGRvoAAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INwAAACwBgCdASowADAAPrFKn0snJCKhrjQLMOAWCWcA0u2vg/PKlar+I6B5fxCuyJTT1Rs1r6SVtGxOO97vlDaekAD++gKAmuMUKjX9JZkWDhCQfC+q3JGXXUQToJt9HxlhRJH7G5v1QR3P+iEaPBVrDqDaxa+gHD5yqdio8l64cuiuub++hkOKrBcH2vodDuWLCzvRER1B+3C3NN+mNV4ul2XxqwjpejjlI142pDWLQd9+sgL7V56/qCMdsWuw074dN+cUxtOLg73/Jce8M5dTxEfcJ4vzRmJL5zuJAAAA","t":"11:48:29","hit":false,"m":null,"x":"KOLs are in: $HODLster on Robinhood\nMC ~$34.1k · 46 holders\nCA: 0x974e57201b50f01c8456979280c4393af74c39ec","u":"https://x.com/memecoin666_/status/2097653366642106440","w":0,"L":0},{"h":"degen_calls11","nm":"Alpha caller","av":"data:image/webp;base64,UklGRmwCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IE4CAAAwCwCdASowADAAPqlKm0mmJKKhMdZsAMAVCWoAuzOpwH2JMCk+s1gYfpnRCqZ6PYfeAIrnlj+kaEgvX/m6yoHJGG4r2wHgPnXBF4zf+qjbWdGyyZg01YXjsBmn06CWcOpBAAD+9BQSfsC0OmwPvwI/3pq08IaSHaXy59FDGi3EDEOZpXosoTo48AtRQNxVtrBCjpFqMuPup4Gs9eH9yLpU/BHq4S/3y2Q+y2ckDfcNcTEraV98zd28JquyUp9/D5k8g4RPqlXJOUxfa1gtxQABiuUwpTcexSV/Bw+jgDuQ84LWGKhoB5bcrKuwnLhJXIPU8NbDbepbBinFwYenZmBsmGe+OPmvf3KtNdY164rhxjKQ+HUmQFuOfIWx7uxyiMic683nBqZr4MDmwXXT1uexIJissnstpffrq8sF3ah9F1QJmHnfcmluEJrnBsh5rUQUUlRxbe4GlaYriU4lHJPRXUWZTr1OT1w8H+5otld9Cz1KAfow0xYEVDb/1SEHCuNcQufQ+20HyQnbmsJJMbrpVa2ECRDzj7kOk5njdR6rbUxXhIk8dZpllzZc0beANRL1uH4hEMaSjorT98YL3dp1ZSZeKs2Si3N/pl/xsLo5GBBqw5Mbux1YdlqDGjgcD0ma58BR+VIyRiKH8M9KPmvfByrNg9rpzb0JlP6C77HFFbXQYMs0RlcsEg2zOJKbiW1DNj3Mgkjtgn6S+j6Nb213p4LBKfuscEJpVZVd1O6X/0Y+ps2oXizjcEEKuZ3CN8C34g59A2xNdvuV8kAAAA==","t":"11:49:25","hit":true,"m":"address","x":"CA\n0x31a068ea5668027afc7eD6c22422681458bbD7d5","u":"https://x.com/degen_calls11/status/2097653600797212823","w":0,"L":0},{"h":"bsckolscanner","nm":"bsc kol scanner","av":"data:image/webp;base64,UklGRnYCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IFgCAABQDACdASowADAAPrFQoE0nJKMiJzgKSOAWCWgAzE9Pfe3AYVH5/++Z7yZMkFr2MCPfDJ/+x5UPqT2Auk7+synkA0JXwVexwsEnkqxNg07+VOZBazHz+Qn2eTm56YzusnrBw6d+gXmWRN5mAAD+/p9QldimpPAWa8nwLcb931Xm6yNPPCG7zw5NzUcBdnf9Put3UxEAlkPmbyyzQcYYbFHcCuSg4rkvKZXubRJVA8aba2MrA+Tsrcm56FwzE5dURBP+3oUwDhp4omJEpoPbMTZhd57N+Wg1g46y2PZhJStdolGanEmYIDhKn+qRlb8A9uIqauiWVSZZphac1yYwttrtIfZMfy9LD4FXF+3j/hKjEPLrhbJaTjS3+WPIKtPLaTIE9OJVpC33DHieI3urzOyLJfytGnMhyqCeTFj/49PGUOznFlMGj7iHwOdUTpM+8CXLssyhNUj0MT0I+gF6wPYDI/vM21QIb8R/6lE4UVBwrdX2PcxcYRRHx6r+C+2aI9o2GVkDi83wXxy6ozdfBO4pqFgeHUJQhK0d+TtBdnkAVgc6gvUVpfuU7eg/66Hyhrb8lH8AwLOoka7Vwup9vbB+ru2S5UfgY6TqX33WgC+6Q4erf4pSeuNZa9YNruBDq0E0K5Cqs0LEYCbEm8qOl50DZrkIOcGEXI9u9agfXjLIM7Sdh0UBuWwbRlU0BvI+VnCjbRJmN4oEvMlXeWe4UDizU3Hqvpc7P5U+HCeA4rPqC1/54FIlFJphdyacYj7AK7XJgcWxuRrtF6TjwSBmXZm3/17rdV4MgAA=","t":"11:50:13","hit":false,"m":null,"x":"🔥 $HODLster JUST MOVED\nCA: 0x1c4c0e507b8ebad67452dc7ae47174e059ae7777\n💸 MC: $43.7K · LIQ: $17.88K · VOL: $72.64K","u":"https://x.com/bsckolscanner/status/2097653802249617435","w":1,"L":0},{"h":"0xdongluoji","nm":"董逻辑","av":"data:image/webp;base64,UklGRiYDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IAgDAADwDQCdASowADAAPq0+mkmmIyIhMdzKAMAViWUAyNrxfix9ZSPKSd9GV2wN0i8z/xs6gvSQ9E1lD6DZjOUiz45rh52kkDT2vWzF8j5p6kwBk/tqsXX7hqOl18ZeQeGCd8SPhz2kwdMCb7Ls4d1N17P8kCTam+qecQAA/v58Ionp0q0f0z7bQBGWxhf9i2bEA1L4lcA2TNVLNiYdBkGIbvPITqJz9n+pf4GGnN7rvhySpwqtOtcqFeKY8fDANTesUGFUHkXJgDCp+GaziFWL4+jVkcXjzg16OnMscNgxVHMQVLk16/G/AzOxjHv2S4GH9MStdd9pOLZbgNllj0NanROIv5aur2quw5m6YVRo/48ZZ1JgnIW3KcWMgPEWgoeVr2zD8ZXoQZIJ/OUqOsksJV4fX42O1TYP+Vkf8oTFV4zAOlrp6ude2sID7jF49d04e+/0Hpql2xCRSwAc2wrZi+1fmi/mQmJzxmSILb+2H39durOzKrOVFOkDRVu0rvrgmLOkzMI0gS0+GmKDp4weJORfDxQunjIdhkbVIZIGnYUNaD7oQvHxw9ZhZeuNTNOmYzLauW+3wFIVNEsiYSf0Qpybt5qsut2G3PiHPliW5sci2fQpRq2jLESuulTQjTQKo0s4AWfFpCTmpl7ONq5POtnn60pm/MUnEdcOIZnGCB8XzX4d2PQ9X8vt61V6I4dkztp1RSOFOKRHsYP5jr6PPmjviZF4WBh99KoJwtoLuRaqBY3xwLR/Osxf+/+BfQOgjkaGtzTHrH57x9Aom80Bkx0QmdP22v77MHnKBgV1vt89GbziSuh/qHxLOCLWy7ro/YnHrkfsqAYxLnMA9xe9pc/SNOfjdjUbKEdnOCeG0pwl267oHJ9UsW3OhKnA0vFkwAmDBF3n6l7S9+ypNc6DXOzUi5vTfxoeeBj7m7bHIq5O6xxBlEXwk5+dq5zt/rSM6CUofYtfP8tco8Lv5v5mv9SfUZVzDYBr/S6K2FKIIEATIE4dTCFXTg0P0Ag6t/1EdZugVxeuNgAAAA==","t":"11:51:09","hit":true,"m":"address","x":"0x31a068ea5668027afc7ed6c22422681458bbd7d5","u":"https://x.com/0xdongluoji/status/2097654038456312039","w":1,"L":0},{"h":"r0setiger","nm":"克洛伊Chloe","av":"data:image/webp;base64,UklGRnQDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IFYDAAAQDwCdASowADAAPp08mUmloyKhMc34sBOJbACdMrgPvxE6zGd23G3b77tyoHw9z6Pj0ZlxNTjZxMqgR1+ivnmVBulD6Nbnb7g1pV+A97pis4Z2ay1EVd3kLxWRo7tmQ3GfhVUMeQEFkADPCQ3UStzk8g1ou1p01rFxARTJqs8D/AAA/vjRqrHPuJ42h4jsUPSVgJvvuLl9G97LVh6R4zQKNd/v1OfZIk8knhtj34F1wCZJUgt4bNlbYz3PrAdidOqIClRtunv76rcbDx4Y5R/H4/nMVXR7bTkuqEmDEso+ryp1z5EhnsyEhI4nP+6ZzOzkorhT6i0sO3qwbExaX8DCIuRwca7ecEEai+GyqsC5T12a0l1x38OuJ/cHplhSPX108GcwOuI1Sr+ewfHdGyu7M9oXb6ojPg1wvbDPUlDIujX9S65R6Ae/Y2SI/F1W5HKmUw14VnPOVs8LLQeN/utqT794LMq1VLsGgCWEvR+y7j12q713HnOUwNvFoYaiympqgPP3S4vjMG7950TydT8UKciX8PHZjm+LRYi0mEjaENzcezJR4BOieeDA1OWTWkoG9PB4MSg8iH6Eh7dIizboP3O2je5tIb2gfndxAdGxy/0IBc0mxU84dpw+3bQoMTvQToHWDJc5tNPmI0DFW0CJpPeLeeeLOXh7LHeiMp0ZKfkwdlS+pw27dvCJwmgwod8zEPKNjTg+JEaqlpglmpHEp+JQdij/NgWgBPPTnm3IWM/JJcGn+oTZIft1DZ9VAjFXbQjln7UVCd4I2Zwc/nxNPuB+rPVWzNi7tG2tZsaN8Il8ah1l45EnqPMios37vzGMwWZ+4CfC2ZAc+WzeSdXz8MRS8ULX+70SAbgy3zu1Wqw9TyBEsvtd/Guwfh6+e3s0nrsOdVPc/Qn+CduCT44XkaA8lavMzpEliyE/RKxKtg7qr+/MEWnZgD1Yonn6ntiMIgWrcPM55dd8owWvHAFKXPM3blmPvkSz0FmRobs6zB6GDb3dq2lhE+N8MPjxlMJHfzgtDsZmlH/1TmwnOIQMX4tlx+qSkbtghf1yL9UCNsXt8SVs6GFGbnlwsrxD62sQVH1j+0PktGsIgumnZXFYybEihSAsIf0TXOWlJR+fL4YyAMzAAA==","t":"11:53:12","hit":true,"m":"address","x":"A cult 邪教\nHODLster\n100k就看到了，买单很猛\n0x31a068ea5668027afc7ed6c22422681458bbd7d5","u":"https://x.com/r0setiger/status/2097654553164538189","w":1,"L":0},{"h":"alphawhalesrbh","nm":"Alpha Whales RBH","av":"data:image/webp;base64,UklGRpYBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IHgBAACQCACdASowADAAPq1GnkmmI6MhLjgMyMAViWoA0AvWpB+qtGA6gDeUCvA9qNLtZfMZOsk/HxfjljK7V941CTMN9yVq4pBNw7u0ZH5mAAD+9+I1WY3U8sVF4sP//3nz/958//efPmLvgSMkIuc0OvgNeXuRm82BRBFwJtJ9v6arvD7nuooICgDs+W4+71/Fq/5v64FOsUjzw4bQoLt6+36UvI7ndfOfgAXOFR8ZfOzca41Tn3tAqhOpxSiUjYXZFENNRNHkdH68G/ZKy97y04vRQefs7P2ZlXGUeuaQt10BpXdlIpudZCEPUbo9uWiEP9+yWqM+ydQmC2Cwd7fz/xRjqqufSPfvZ1Xyqg+oCI1WLJJPJXGdOeNjTkL10QGiA2XQ++UPke5aaHfc6BtIbsa1fhZ/f9phpcTL5ysel+AvN/VmhN0QkDa9m2jQ/l7NY2swpo+xFyg5SKjl19YjUYU+JvhYkkE31iZUEhoITMQA0gQD7amGIAAA","t":"11:53:23","hit":false,"m":null,"x":"Two whales meet on $HODLSTER with a $1.3K buy\nHotness 8 at $468K MC","u":"https://x.com/alphawhalesrbh/status/2097654597166760279","w":1,"L":0},{"h":"dexvoteteam","nm":"DEX Votes","av":"data:image/webp;base64,UklGRkYCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ICgCAACwDACdASowADAAPrFWoU4nJKKiI4oA4BYJaQATz79w6GvykfkfgK4HMbW4LGB52v+55L/of2C/5P/Zv+F15kwRJ+jKdGwajfHLSvFyI9V6vtNvClr1MVYw3atdNhb8vb9pjO+gaxwQQVAVkIlQAAD+/ob2PGcsq2QffXgmj3zbl/WbvPL74pH02q9kjT1AJnKDqMvzsLH78Df++4VB9+xhXAGvxMRzol05iFP8FsNw2jAclw4pxU32GDV1MDlcGhIpcHpRP4X6GWLJ8cstWM95kGPqxoRjZ5EraRZhhv78MWdz/v/l8G0QD66gFJfIMwGEaslk9Iaz/tjVSRxa4aILDj5xXqO90R04t/EUX7BWD4p6NnDufd3Lv5tibR1xI27UFaytiTYzAi7hhNUUqxPO+YGK0WU8r4behP3kTOqF5+1j8+CGeYK0H/73G5LCQrvrD64gufVXaiatpFT65W2sS1BMD9/IxUozGnjtS9g3ns13xE7Nasw8l/94EMVQjVaKwIO6hPHfJ2+DuMcp9mi7/KYAmdu59vsB5tpsg8/H/ptWDXIvgdz3nguf7xZxUetqNtTfMayLA9dF4G9B3GahOvnyQCuPb3cpb4x54ffLZM9oALkWGp2RNDZDH9Wv4hLf4LH8vZ6ZRcbIBp3RMg0c4FGAeJPfq17/W61oNaMixyqTKGprPCDOu5nEOOY6Riph8qgQO+TW3HORzPxicsrvzUhzPmAAAAA=","t":"11:53:35","hit":false,"m":null,"x":"Its time 👀\nVote For $HODLster 🗳️\n5aUPVZPSvVKoCsp1rHCn7RE8s6zYFPhvUkFaZ4Z1cr4C","u":"https://x.com/dexvoteteam/status/2097654650300506379","w":1,"L":0},{"h":"0xmanyuemei","nm":"蔓越莓烦恼","av":"data:image/webp;base64,UklGRjoCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IBwCAAAwCwCdASowADAAPqVAm0mmI6KhMdmd+MAUiWgAgv5bnw8TA24BugmlxW4702UtiPzfmyGd5kiNAtqsJBbCMF9fvTb71qGXVLronfLbqedJQghCe0jwG0rsW/3TW2m9Ur2cgABo175chIKauSg+1lXDan//zinCBA2erWDFHcLP//mCgBhDLc752sUXkYSBVvfCqcy2PSEhmuH5TOi7TtThF99jgPLlfpuV+nnZD/Vr9sL5OXWne4UcP1zpnA3VA7q3RyCgJc4EjWs04tyUVBdOTsuSoAgcv6siG1yAvXklUN6AOJlfmpX2gv0iW8NNPk/k9q5QQbayVuVlwxQ4bw/mLTidE6fVpihEf57EvUdB9orpQ7dJlk6I2/UtUi+vBIwaoVNlhBcXV48pQHOzH+78JuA/px84xmuxvn0W4IzBsSwOmLurZWFUARkJmTYf3jMRcaI+TI48YfMXF4kzP0XerPu+zmCG90VU122XPG+ZACa2JJ9ii5Tn3IO5+2nqAsy1lM4BMRFGug/6NBI2dXllgjHZSCATDGgRcvN5uJ+JWs04uAoQzPuI22H9LEJEVgpbIO6mbVyhD45TmW30Mibd4Sc/KJsUKmy8ZQZQAUBxaGDFUJEkZ0gQOimO/JW2cbqQgpPmZqkeypfo/VmpT6Kb9+2/YfpJG1IY6NSNT4SLKrC6aJK/FKz6jegyQuy467lkUhAXr7cECVmAAAA=","t":"11:54:09","hit":true,"m":"address","x":"0x31a068ea5668027afc7ed6c22422681458bbd7d5\n这怎么感觉有点像gme的感觉 出了个本 剩下的看看","u":"https://x.com/0xmanyuemei/status/2097654790386016754","w":1,"L":0},{"h":"solfighters01","nm":"Sol_Fighters","av":"data:image/webp;base64,UklGRgYCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IOgBAACwCgCdASowADAAPrFQoEunJKMhpzgMkOAWCWQAwFw1vdtqmEKgU1nDeA5PpY/4gZ887dxGNMRivw2+gZMM8LBcm3CHQg/dYSXacuokUgfY2asuLE0O3dP2hOsKhoggAP76/rH0u7KZJQjqnn/BhXcuLk3ToL9dLAR0mNw0nNV5R/Vz44Xy9dfuvdN63yNSyPG8X5edlh4Z7GtOP+lSL12z8YUwt4GKnntJDO4SS5d52WCKYl6nnz+658S3dg7odF1UVttQEsr/JDfM1PspuDHIU4HGlM1sH63/fihjTfsi/E14hdFRURrJe2+lCFUkw6UB3CZmfyEi+JltGyRB/oII/KEp7r1rkIJEK42ajP53Nf6T4TzEGylb/f/J1nyQVrfcuefaUrZDFb95IJIyQSbp33DScuGRJQD9JcOQQbycrh6qRjit5f1ZMbfOblwdsV/4LibNr66YR/ZLW0SHW7pIcqTdrA2ckJ4p9ZdFDq8D9YFSt/8JtFTfuIvl1tkBN7/T/TfdGG5FpcqdLDgcZvsgt0Js5+XvGETvq0BI9zC28jvfnpG48rX1YtV4RLNSBpVEv2VCRvgaWasdxjaMLF8H28bxA027b1yUuVcg79xX2idiSqQuspkhUtG9SGgjYNVIpa4I5e4AAA==","t":"11:55:12","hit":true,"m":"address","x":"Decent 12X pump on $HODLSTER\nOne call One entry\n0x31a068ea5668027afc7eD6c22422681458bbD7d5","u":"https://x.com/solfighters01/status/2097655054656254153","w":2,"L":0},{"h":"chinapumprocket","nm":"Whale 鲸鱼 BNB","av":"data:image/webp;base64,UklGRowDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IG4DAADwDgCdASowADAAPpEylEmloqIhPH34ALASCWwAnTKEiN/FPAxx9uxdom88WZtuqxI8p4FNwfT73ryxWAGkRmmeQB8mvinXD+cuoQKjAJZbGasVCsbTiuY6kolMhU9ftGJDgn2n3uxp6xZG4ixt/eRpnUQ+pwZ2+MCMnKOK9p81gAD+9G1HOCb5H/aj5+/oI46iH3UvD9/+vZWGIctk7gY7lG1JWfnwGhZN2YfrH361XAbbQNYcOyWKGfJWStoOE+Cb+XIrt5NPuuWBUq8ZQshPu4ASpToFkQwQp+LJV/H3WIVPcfw31MvbKU/4K/8s+QezcYG7ZaWG5x/tZ3QRBSAMvol94mY5I4vDw54CPA2TOQgMH/NSwJ0mqNMumMw5zYKUJVQM4SJCJwhnLfXvWBA9uzlNCH7mUfPJpIS/NaxAZDzwjS+Pi8nHT3toE9AL+PDcYNCRLwEY4OqEntxOaRvsqNfmBm1J1S0F0LqR3mtnS70OJNjFum1BSTMlsjCWVSb0eWIyCOhaj52LL1TWEippj6SV3awwXheZRww3J1SOGJGvVYyRA1k7bTCPM585kW7b8Y5n8BotsNa4iufa0IQjn/j1VLpRrW+9E2B7yMf5IRZYENQoVA0YA8mFcHiuFCtF4TnggIXOY/z4qdRO58iMD6byVCS376dR94Tx9k0FBvatu3w6Cdl+Xims3N2Mg4fF+Dq39Ac316Ky9DeKPlf3k8LyYyj1rBimfCQTQKscT8LY1I6k8ZHGUKLuVsRAL+6w/SEA9raFhC+wyipiYiRClTZ4M+jLQir9P3Gg8r1Wr7pOGPrSp7zZhh85or0Fb2f5TAhEOTeXeDauMEihq+vx6D+9NV72o6ijroW5c/29cIPLSSjuPo6FnazXIMUkQHh3NF3W74JTYGKdcZWddsjMxwWGaRMYKcTNMDwz6X5b9FB3vZOgKRKv4EKmj+6dRgtL0MnElPH3SKJwFJ2a7WsXiPUQFEd2Ub8MiBwF2GWpu3A1Ep8u2GeZcZ3lNlzPD9ZveJVUrMB67YbfQKW16JI3fbI7olmRe4dk4I+tLPN3EYF7W+OzqSAQg9BVnC8dXPTIgE09LwDJrJVMaBG6nd+2MJfolAcUQSN1y/3qz7Yt7I/XMJeGyhdypKjUf/cJ9w/eW9jtly9lWMQN8wAAAA==","t":"11:55:42","hit":true,"m":"address","x":"🔥 $HODLster 1.02m - 58x in 10 minutes\nMy AI bot caught a runner again! 31x in 5 minutes\nCA: 0x31a068ea5668027afc7ed6c22422681458bbd7d5","u":"https://x.com/chinapumprocket/status/2097655179646836960","w":2,"L":0},{"h":"sol_apex04","nm":"SOL_APEX","av":"data:image/webp;base64,UklGRoACAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IGICAACQCwCdASowADAAPrFKoUwnI6MiKrVaqOAWCUAX3CwpM9thz3Sm2lUDtdyUqYbsdO0+t8rnWFeu1z4OroeBuuCMr4Zh43x700VvRkpNZM4R6Q1hrUp1+W9OCk9A9I+Ef4S0ke4IAAD+/s08R7PA7yTgzEWuAFN6ptctnVeBcY8TmUx/J9RQPXLakajHJ0OIoEMl/DNnBHjMSzFup0LEQUDQjiI909179ZVvTF7lgcNy3OI3DeNMLBv+TCYTZGgknJG8SShfd/cf1f9m/5Sm4AS91ihlBBakN5n03xWs/BkF83So40Jl4Q+Ay34PbXRuWnRGIZVjT2ff6jr6GhCrPyKeoW+rni4RJx4ma1+SFWblA4ugADA0ylu69zqGErLwOvislqIid1hxTKm/9nWHkLnyh/tdw4henH8lKNl7pvhYwwPMvAl3LR2ZAm7fMfUttUSy9JfLZHGfuzaSpYSbMRPrqHso4KQFdgLWN3bK8qHyDLh8NVG7izD557WmVZGzRF2j8IuzD34ixNC1WdPeLZi7NH4GPNaerMdMJU+DofZnc3FxQ6l8e7rXK0EOhN/mmvTzJ8F7H//wjAUQ1/VBdxf14K/rw2N43LN6PI9fK6LnljyIZY6kHbdel661hga9wYGDZH21vedJb6bW20v5OuWecFKU0t4TZS//EviEpnGdHGLFk2KyPqbBGCD+9nSaJ2fD/3qOyvHU4krBBusMcwYVta1bZ/TG318DVhnO+msXt9kZ8qtAjXmWkByJqFPkmyiwEslzOx+PQR6lBc/i6P2KWWNX71HBP3blVL1T/B9vFAAA","t":"11:56:07","hit":true,"m":"address","x":"Decent 9X pump on $HODLSTER\nDM for legit early entries\nCA>> 0x31a068ea5668027afc7eD6c22422681458bbD7d5","u":"https://x.com/sol_apex04/status/2097655287574401398","w":2,"L":0},{"h":"trenchsniper777","nm":"trsniper","av":"data:image/webp;base64,UklGRhACAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IPIBAACQCgCdASowADAAPrFSoU2nJKMiJzgJIOAWCWkAESKqUxz44C6gNgzjA9CTPW9S8BlMESgg4v0XwFVv15vay6fvTgi15xw15kAJLWShBgIcRze0hgNRAO8E5/r+pSAA/v6G8Ry2r9759sQAwTEuBEZE7egHG/Qm0ue1mNewD0Zj7ej7aIktU27W08aQRbWdRDTZ+HDUxjfpJ+/5qwrrthBn+H/D1LS4i80ggn4x1GUm7CoZP3Aeel44J5ZmjVX6WtpgCn714uSerJ0Q/dXrVwLbTTMdRvu3BRy1AiKQkPP+TuADBUs9NZFXjDNj+S8OdoeUPbufKC/XtMNk7SCcn/+lMy3U3AOkpkgkyNMmqNMYqfnybLq3kfk0l8CaRzAqw9jAYaTmrih1fhBzL4O9bLn4XoZT3X/rOeVA8iY3OFpdS2Q653b5XyEygxM7A50QiBfj/6/Jn/arZiWSGfxl6WWZRGP29DTiBwnKQJs/8qGxhJbuZjdoq93xfxSVswzPokeoeSPXEtmtoS4GZB0PGjKdLaD2R+l6m8VRjWBC6DaqbSm9qZKCUHWW1ieoth4aiiJX+dPYYk8pbbzAdwVHgukCytbhX8FgRqbP6curnXZQ7LuuyZcNTofutA/Py/2ER2We9IkfDl9T9D4DVk47U9gAAAA=","t":"11:56:42","hit":true,"m":"address","x":"0x31a068ea5668027afc7ed6c22422681458bbd7d5\n🚨 HUGE STOCK / WALL STREET GUY JUST ASKED FOR A CULT TO BE CREATED AROUND THIS HAMSTER 🐹","u":"https://x.com/trenchsniper777/status/2097655432315548152","w":2,"L":0},{"h":"chadpatrick","nm":"Tobi","av":"data:image/webp;base64,UklGRjwCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IB4CAAAQCwCdASowADAAPrFOnUsnJCKhqrqsAOAWCWkA0YW6+eeG42+jhb8YdX/TueaOxxoV5+4NzqKiGxh89nBJoDh4lNpB7Zw/Gmk+MY8h6RsSyjmyKn2M/bYkhSHu9kYEphBQAP76g6q27Qg17Z9n/75468VHqJLtMCvYzoqR9XXy0llt8P1BNHjUwQUWvpQvxw+F56v/A0h7y0/w8w4/JQ6w/qCq+u8nzzUWoB8TXTN8/Ov46kNQKqgPqGYg59q3UqYtTlhMg8I76vON8ooJjCStXG0dqJYzl6BvegMzSSjF5vKxL2Wan2sSQdnGaIZifk61ehqfdZz+W0NBnKfHKAHiR6YKGf0YExx8OPTZd06Jk//hlRPkTnpezoHA7boDgz+tahVkQkML/5osbBXUrUwkFJF270C5+OgVLn9tMDd4AAMH7ZiBSm92q2i22XUjAjzGMmY8GBCzkqHSqdl5AxLmhfWSm/l/qfPCZ0X4j3paxYSyqumnj3OIDxHgQfHQ5b2itS5ccQBvPDn9j0QOdG2/RhujNSg+Lm8ZTpPKsMcqkd5Oxcd5/f1vIpm9tJvi8eD182oSZ7i1bL6qs8Ys+kYE/PHp6E6PLfE48/560Hyi7dVSpxbn7rEaH64R+5+rUGKnWRDs2FH3CgQ4uQKmmpUQe0dtYMUrQtE/z9J58ZDiMypvQqCanyHOAfRb7gtGJ6kyMSamAzeWthPDjTTAAA==","t":"11:59:02","hit":true,"m":"address","x":"Wall Street figure Michael A. Gayed, CFA (@leadlagreport), posted that day calling on his followers to switch their profile pictures to hamsters and rally together …\nCA: 0x31a068ea5668027afc7ed6c22422681458bbd7d5","u":"https://x.com/chadpatrick/status/2097656019996545131","w":2,"L":0}]},{"sym":"Fork","day":"9 Sep","ca":"0xa5fd8111ab83d75475ab3cb681c0d9828e1aa71e","win":[{"lb":"13:00–13:05","r":2,"a":2,"b":null,"x":0.0,"s":"WARMING"},{"lb":"13:05–13:10","r":1,"a":1,"b":null,"x":0.0,"s":"WARMING"},{"lb":"13:10–13:15","r":6,"a":5,"b":1.55,"x":3.9,"s":"SPIKE"},{"lb":"13:15–13:20","r":3,"a":2,"b":1.55,"x":1.9,"s":"WARM"}],"seq":[{"h":"dexpaidpanther","nm":"Dex Paid Panther","av":"data:image/webp;base64,UklGRsgCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IKoCAACQDQCdASowADAAPrVMoEqnJCMhrjv5mOAWiWwAuzlBVF5Az6SIotEK3bUbkC9gJ9pjTlScD9KmzumRlhqpZL706+2vKGAxDQ8746tzOqfSQxv594F/F1xycTNxZil/sQFrmttUAasqP7Xo+Zq3050aq6M6OAAA/v7X4XFfR/L3x6gGk9Pl8iWm7mFVVRiscWv+3msc+KUNau6jgnRagzfs0PyJWWQARbfv38KvsYaCZ8o0GiqXvemPLqth9IlHam+I3NV63E+4nTcWVKs8oyQN/7E/3obh81zjbwDvqJRJQ6wogOiLB25W4kGMp0bqU06p5Xvay8s+z15rvd8tusiuhfdJvzu4QnlNeRtXr/EX7XnlDZVCzwYeU96RGN20LrWcInIVVczOTKP2XrZHNQdK0nvtpK8S3/PqWmFj+Iqeyh6+NqE571lrbqlVG8sGOoyqa+JHhYSb7qJbDwmI6fpm/KsmiKWi2Jhfx+6XfnJ6sJhGDNW2hmH6Ybe2zft/i4ktUmBsTjkQ0bNLqFcjrGXNehkdUPNGvVmSHwJBeQda34GxqtS6SZ7D63oCS0s6vTyg+RPB4F1SkeylKqAIg73Yo/mVzVeuoVHVDDD9Abe4t1iMrJkeyxboXqbEqPm/K0Xp78B8mVapbN94YMNaikoFq46V30Tu8hjtTybm8ytZoUSGPHn7/BCVDrtz8Q6fErSs5UNesjN/pkw3JkaxKpr4OGraqFJIP3yFk7/+91LFPxAykuIzrspJxrgBQdfU5lPQ8EaBWcHeVzNHkL4CTncNHbc3p04zSarapR/maeQqlpdFDSrB3jI0NSvDB4xIvDLCYFIevSFxlujVRmCgln06jCACEdU9GKWa4LWT//jMIOHj6aDQYNXjDZ5fxrVd8J75cgG8URG3CIAA","t":"13:02:13","hit":true,"m":"address","x":"✅ Dex paid: Fork (Fork) / USDG\n0xA5Fd8111aB83D75475aB3cB681C0d9828E1Aa71e\nMC: 20K · Chain: robinhood (ponsv2) · Rating: ✅ Good","u":"https://x.com/dexpaidpanther/status/2097671919654883339","w":0,"L":0},{"h":"dexevents_1","nm":"Dex Events","av":"data:image/webp;base64,UklGRvQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INYBAACQCQCdASowADAAPrVOn0snJCKhqrVdUOAWiUAXYcQBvLFZm5QE+XIAe4/6iOD/8ahnfjmuKnBL2KeBc98x1FeIWXyRfpygPvZmEO6huoby/G9exa4AAP7645gHevZrxiEeb0+fwI8FXnf88f0QphgyKbAVFrVYC3Jdv/BmfihfwA0m6Vb8B9XOSrx2z7bX3i6wtfBAQX46L9tBmOYWBwBcIapH2URRaeprAAlq2a35VgquiNUB/8+S5faFnu4Tm6wRumWsbUVUp0WVq1CRWbsD1lvFSHPNxDLmV6JUTd33GwP5axxxjBzD7T90fwnYrdFWloFUqCIZTLS/OfLdB+zzDwATuGt/AA+f1IsFfWKP3yjiulp77WQ7bY8cIvEtckZawcDVb7Gdiy+kHaC8HUabheJde4nndHDS2xadV0GSHWKbb8nYFA3yMI1uv+twSQuzeR0bLVut+Dyde79RGLUm7xEuqpI8mB9WDx30Fa/0PpAcAguapzEAevU6p2PQ9rShEM6c8vVz7ihT9YwJfJZyuoodW5t6RT09UGzqIaZOBkS1FaN/M2a7H0WD1bpfBw8isivDrpYquMd+mfRAUvMw2nR9MIsqr1v4nLUfp6XLdgAqfMYAAA==","t":"13:03:28","hit":true,"m":"address","x":"📡 DEXSCREENER UPDATE\nToken: Fork ($FORK)\nCA: 0xa5fd8111ab83d75475ab3cb681c0d9828e1aa71e","u":"https://x.com/dexevents_1/status/2097672236094083171","w":0,"L":2},{"h":"silentnomadeth","nm":"The Silent Nomad","av":"data:image/webp;base64,UklGRvABAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INIBAADQCQCdASowADAAPrVUpE0nJKOiJykg4BaJYgDHY8eF8GZqBMcCuGlWM0Pxs6gnSQTBEngAL4M0NbnmfanJWDH5D3vwMRNIsmNt4STn1Vrp0oRO6ZbdSAAA/vwQlgABTX79VHRTXgdI1H9b39//87B/pj+mPLLvt3wN/9YRecwblwXubwId1E867oypDJSsg0B7n9TklE3mr5gPC5CkgKuOUqUM9dgThoEzXSxzyH2hPxQxewsYpaZWMh2AUx6YqYlG3Njvtl2z7xI+PFnYprKQcKnGG6/ziKnfTnT7sdhOw3slm7NLDu9kIr9nLiUBQmJXPXu/Rz8ADGYBsQUFAG24PjJ+wAm2+856KT7K0AjL2n4dO3pMP/Op0UtOr0eASBTeVe2nqRUt4URNYbMmZvjQsHfV5k8S7ivS6KvL9iShJSxIzT9DXqPKRhowlRMcIaVCIBDWEJBDAW++bo1eOSnrlBXzBQq6r1DNwJw+MjZX2WpoM6pxfTZD8HlhtgT9FLFKSvP6CD7moEDoRBssaTNmFdmRxDudG3auF4q0l3QmOtng1XL8lsX9iUDAvKpGerWOOd7fS2N5wYP3XHErUse+Pt/JXDcgQL+wAMWmKmL12vgA","t":"13:07:53","hit":false,"m":null,"x":"Attention $FORK Family! YOUR vote matters!\nLess than 100 votes are needed to list $FORK on the Robinhood Top 100 Leaderboard.\n- Listing ID: 7534","u":"https://x.com/silentnomadeth/status/2097673348540928189","w":1,"L":0},{"h":"scarlex0","nm":"Scarlex","av":"data:image/webp;base64,UklGRvABAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INIBAABwCgCdASowADAAPrVUoUwnJSMiJzgMkOAWiWYAygbxfiN+DnXDaYeKY/5juPay+YmqbDYNkYyZlBvdZ2nSjhdhvuNmL26tAsYlhROxYb/kOCUxMM4B/KvupaOtAAD+77CL241BvUBS4Q6XZO8Y3w6VT53eVhfxk6HQ+haLFZTYTt9uNE7/hEoJoo6eYmQEyVbzeeqFf9CBT5zUbcXF7CNdnfluz2Nqj4nnQSTGP9pvO4I5TlLLDPvjpigdjDEt9WPdH+JurtNT5Hy2S/3UTBB2XqxTZ3Vh3iNDih5gOrpo/gZ05bFemzFOezwrBCJ3IyjMyOgUnVgmh2dKCI7CDk85ABIDZK+VJM3mw+Nok8Jwwu0ED9Deiz7TdDDfOh96MN6DUeH3lZ/q5/pCvMSBrOeQoXGJPSo7vpnwMzorx7s12hHK22LVLntsXMb7MfAlOuXCj+YnTB397u61TeAgsiIUevAWEO5k2bbAQ0UHWgtwZLVriWMA7ZynvMi6u27LO2gTMmRU0XOk2gfbGC8eQEeOnBZ4XkXqlm1bBuo/2HHA109nOYTG16RQzUwUqAvDRjXIxrCIw9iMIVKJUq4Kwc+8f+zVT/Ch/6Tetn6+s/sQSAAA","t":"13:09:36","hit":true,"m":"address","x":"🚨 Fork - DANGER (Screenshot)\n👉 CA: 0xa5fd8111ab83d75475ab3cb681c0d9828e1aa71e\n🚩 Never buy rug pull tokens.","u":"https://x.com/scarlex0/status/2097673779564441614","w":1,"L":0},{"h":"bajiechina","nm":"骑猪看世界","av":"data:image/webp;base64,UklGRuoBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IMwBAACwCgCdASowADAAPrVEnkmnI6KhNVK9UOAWiWwAuzM4/s93vAbdk3U5dUO+0SmmQaHcBVgVbH94gV1DtAQKxj/+jMfFv7bVbcSViENtIMnsEZ/ugjdJL+/G/jb/LC7eAP75ae+w8S3yhzThjy3wHmNv9OGXD9eq/xh4ZfzAdnYnZPw5oyG7TVtbv/hEI1xKQ1L5vbE2IV+XtRFEvYNOvwOpxg1LZwI2Xu7LK1310ANZvC039BvOXsjHUUAvh9Uz4JsSzdr6p+EebM3c6T3t7xE3gi+CPtKtcqSTnwHfIpxgs/GEM6hrtS014vJzmvPcLzleVej0nk59P9aiRbSRT7Megd6v4nw+SrkCBAEKYrVRQD3DFjUzrJehREWSkc4nya24bgfHJoSdsy/8Fuu4p7mQPAFfsRDUc+rMd//t275YRjmjrES5rxnjqbddXefDmA1XFBJtytTh7FySET5zJl4FZ30F8P/S37DBT92oXY6FKuA+zVcAtpYsaXfFI8yE0sylBAbEq17Eq+xeSh9RdrKCQmZGQ52I0WUjjqnLpEMXrSRsHsV+wuf8CPYxcTpOy21rmCffdqtC1Km6oPGVqmqCLLflV0HxYYwGAAAA","t":"13:11:01","hit":true,"m":"address","x":"企鹅🐧画师推出的青蛙🐸meme币 $fork\nca：0xa5fd8111ab83d75475ab3cb681c0d9828e1aa71e","u":"https://x.com/bajiechina/status/2097674137083031845","w":2,"L":0},{"h":"chanpeng_satosh","nm":"Changpeng Satoshi","av":"data:image/webp;base64,UklGRigCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IAoCAADwCgCdASowADAAPrVKoEynI6MiJzgNsOAWiWwAuzLewherqZ6GAi7s/p3/wq+ojVc5NCQwMiNRtK0dsK+CRk25LoImy+pgmoHy7J2OHfCLY0vmxHYq/HWJ26JO/FIeBEAA/ucftkQ8AvMgu9rRfZ8pPmCAPiTaORzrRat8MM3KmzhmW3Ah6Ow37+Vpjhv9UY3nNXyP9/v2wZ9QZ0v71LGGrRIE2dKF2yvMkopwdbV/6Luz8cFyXxMbK9z1mYQd6B1YQaA0Gsk2irq98jOrGdfynMLD0QD/RWNumBj5/z3aurqy86VaA4jtz9gHL1SSWOvPzU7m3snAYkh9I9a551YOktKLb/2FbwmLamfs3MGNCTVqi3V5fUbeb+VN33OOwBgBEdvCJhfgOjqMrf08jr6GLT0rxCb3uilKig3sSXbFwLhYFQhrBy8oGO1Caqb3pTAbCmI8aTeL2AkLnRP43hLRgoTvX8j+pnyeCs+EEMyjMDTb3CvwB7wmY3Mt3dRcUiXIqCwAv9dG/Gwx1IUYtd6zpIlWzqq9y3OMEGXwXpvjy5kLefg8Uakk5IsKn/Ki4HKjgVsN6gRi3dyAremebHfBt+ylGL+3Vo6e+KJB17HyKwHug8rUup1Rx9VVjhjutddx9QQxFTsLH3PzinG9yc3z3GXmjYPhp5/HzvTEvf5ig1vlxFngvXJYAAA=","t":"13:11:02","hit":true,"m":"address","x":"2.6X up pump on $FORK\n0xA5Fd8111aB83D75475aB3cB681C0d9828E1Aa71e","u":"https://x.com/chanpeng_satosh/status/2097674141834833943","w":2,"L":0},{"h":"dex_kolwatcher","nm":"DEX Signals","av":"data:image/webp;base64,UklGRhICAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IPQBAADQCACdASowADAAPrVYpU8nJKMiI4gA4BaJaQ26gCvAunLXfTIucr6Z9gfygOpVRWL7pmvCGqursKnmbMmhIRx5PHQdkPGO1QsmrHBNS09oAP77d+2Jri6Sj2ZUaN/XXAAsCZbi6QftDwN4gf+EpDO3j89u0eypZibYkT33S+ZxNLKWtZvlsFBsnJmm6crl5LD/xfICA+cYLLF9bzv8s5lSz+IldGGUcwzunjv8YBsdcZSISsb5FpV6xMKUeKBFuS7jnlU5xefE4Rcib2bhWX97//cfR2Bs9YxgLZa9MUJEiyr+JY+VLYHYAYUfg5UscBHlj7/+yxmo5RfX8iB7TD2aukJ4TRFRL3QbUKjuGDzARireMrdzsn52Hmb9wN/+Hdtunvz4RfLSrZYC+SL3C7YpG4HThTTpuDUwzWEdqX0VbvfKqfmsPHOEW1l6lAuh7mXd07hTFhCobOmJyV/wQIgkJQu8lSZEdv7W4aTRizx/lJ8ckag5MzPM7cmlv1m1XuRpcl66zdyTJ5bw7fskIbg2fyZHrnMCd/5BBjGH3Vqz1E00hnjy9orQd7im2UamMCceUSexf3FEJxHpW3H9vmTC8wL08HaUfmE5/lIqmLHBnNVYh45ZxMQUU0yvG/f/92dA/C1YZJraVBB36Q2Oa4f0MwAAAA==","t":"13:13:04","hit":true,"m":"address","x":"Detect PAID DEXScreener: $Fork 👇  UNISWAP ROBINHOOD\nCA: 0xA5Fd8111aB83D75475aB3cB681C0d9828E1Aa71e","u":"https://x.com/dex_kolwatcher/status/2097674653296992432","w":2,"L":2},{"h":"peepradars","nm":"Peep Smart Money Radar","av":"data:image/webp;base64,UklGRlQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IDYBAABQBwCdASowADAAPrVQoUwnJKMiKqgA4BaJbADOZ3L6T8gHQvbBbgG2Au2DebQncLSEjNzIzPjxzJo13/iDJDQttfCAAP7eEn/9NIZ/p0V9v/7dny07oeeaNROs6tEGwIUcLAuAjzmoEpnin1khEqwJSypw1h1llxuQkqsv3pCP7ejk/NtnEVRm/dU9n7yad/ZMSRBJyzKHAJPueoDMQHETYdTFcjjLIN8gfUSS96WhxbLu86D7gG45XBTgS9ueeaPwDMZVeDeYkL5qkIjvkDaQnxH76JtQI8s8NHL8QBPYKop+3HyOXcO8o6FdhT9D5m8Xi52oMv5hcAlaGxCRG3FeWTUs09wUAOHF1OIidtifRovkv6vhgf0eiwhqQBLghsMj/MvWaUwcDCGpAwBSF9Z7W9wAAAAA","t":"13:13:49","hit":true,"m":"address","x":"🟢 $Fork ·a71e — Fork\n💰 2 smart wallets just bought · Robinhood\n📊 MCap $61K · Liq $20K","u":"https://x.com/peepradars/status/2097674840647794826","w":2,"L":0},{"h":"solinsidr","nm":"RobinOnSol💎","av":"data:image/webp;base64,UklGRqQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IIYBAAAQCQCdASowADAAPq1Gm0mmI6IhLjv8yMAViUAYwQGNyt/bbkghU/TktrMKSssPsTy1C3K0v3WFJq4ETMB9TchVyZtkuDlkD+QCr7k/HFl56AAA/v63DiUtevj6kMpb8G/j8Ap7Ku+HL7wTHyWp6ybJ8CYS5et5c9t8V+vDnkPVfdlzTJu6oAIcOq3i05Oo/g00HIDZulB/HJhCgi4H5lxpeTLytSB1fbmcS8eAvt3Rc1qvSzxHtpQYVtcKsgwfqN0YFL4lyWNZr9b9eYpBQu0R7u9jmSntq8sUCxqKyEVgiIrpW3eTglzzr8goazxLMSHlyFIamvr878hvSKOLbRywlpDvbc3IivHfk53Oj+BTdwNo3k64kHHFF82iQqzBzV3cVm+QtQQyKKh1kuOvGU79hh8Kfhh4n9j+EWD/H5N8lHMURcm+PAUNgCXAKQ2MXAEyHyrYQGOAP/dVUDZgBdjj2+yjTnvHjNGW/vbUP0snqPpEInNfzmGylYIffWGMtMIdOXAAAAA=","t":"13:15:15","hit":true,"m":"address","x":"ENTRY $FORK\nCA>\n0xA5Fd8111aB83D75475aB3cB681C0d9828E1Aa71e","u":"https://x.com/solinsidr/status/2097675198950506805","w":3,"L":2},{"h":"bajiechina","nm":"骑猪看世界","av":"data:image/webp;base64,UklGRuoBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IMwBAACwCgCdASowADAAPrVEnkmnI6KhNVK9UOAWiWwAuzM4/s93vAbdk3U5dUO+0SmmQaHcBVgVbH94gV1DtAQKxj/+jMfFv7bVbcSViENtIMnsEZ/ugjdJL+/G/jb/LC7eAP75ae+w8S3yhzThjy3wHmNv9OGXD9eq/xh4ZfzAdnYnZPw5oyG7TVtbv/hEI1xKQ1L5vbE2IV+XtRFEvYNOvwOpxg1LZwI2Xu7LK1310ANZvC039BvOXsjHUUAvh9Uz4JsSzdr6p+EebM3c6T3t7xE3gi+CPtKtcqSTnwHfIpxgs/GEM6hrtS014vJzmvPcLzleVej0nk59P9aiRbSRT7Megd6v4nw+SrkCBAEKYrVRQD3DFjUzrJehREWSkc4nya24bgfHJoSdsy/8Fuu4p7mQPAFfsRDUc+rMd//t275YRjmjrES5rxnjqbddXefDmA1XFBJtytTh7FySET5zJl4FZ30F8P/S37DBT92oXY6FKuA+zVcAtpYsaXfFI8yE0sylBAbEq17Eq+xeSh9RdrKCQmZGQ52I0WUjjqnLpEMXrSRsHsV+wuf8CPYxcTpOy21rmCffdqtC1Km6oPGVqmqCLLflV0HxYYwGAAAA","t":"13:15:18","hit":true,"m":"address","x":"你们还没意识到，这可是笨企鹅🐧的首席插画师，他亲自推出的青蛙🐸作品啊！！ $fork\nca：0xa5fd8111ab83d75475ab3cb681c0d9828e1aa71e","u":"https://x.com/bajiechina/status/2097675213261738246","w":3,"L":0},{"h":"solinsidr","nm":"RobinOnSol💎","av":"data:image/webp;base64,UklGRqQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IIYBAAAQCQCdASowADAAPq1Gm0mmI6IhLjv8yMAViUAYwQGNyt/bbkghU/TktrMKSssPsTy1C3K0v3WFJq4ETMB9TchVyZtkuDlkD+QCr7k/HFl56AAA/v63DiUtevj6kMpb8G/j8Ap7Ku+HL7wTHyWp6ybJ8CYS5et5c9t8V+vDnkPVfdlzTJu6oAIcOq3i05Oo/g00HIDZulB/HJhCgi4H5lxpeTLytSB1fbmcS8eAvt3Rc1qvSzxHtpQYVtcKsgwfqN0YFL4lyWNZr9b9eYpBQu0R7u9jmSntq8sUCxqKyEVgiIrpW3eTglzzr8goazxLMSHlyFIamvr878hvSKOLbRywlpDvbc3IivHfk53Oj+BTdwNo3k64kHHFF82iQqzBzV3cVm+QtQQyKKh1kuOvGU79hh8Kfhh4n9j+EWD/H5N8lHMURcm+PAUNgCXAKQ2MXAEyHyrYQGOAP/dVUDZgBdjj2+yjTnvHjNGW/vbUP0snqPpEInNfzmGylYIffWGMtMIdOXAAAAA=","t":"13:18:24","hit":true,"m":"address","x":"3X FROM MY CALL ON $FORK\nCA>\n0xA5Fd8111aB83D75475aB3cB681C0d9828E1Aa71e","u":"https://x.com/solinsidr/status/2097675993242624339","w":3,"L":2}]}],"callers":[{"h":"yosefperal1539","nm":"Yosef Peralta","av":"data:image/webp;base64,UklGRloCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IDwCAABwDQCdASowADAAPqlGnkmmJCMhNVgKqMAVCWwAnTlBUb4SfVfMirDWFiQQotuPuSN5s9ADpfLPfnI3hLFVOjaS1LPCTnRt76Trgo3lly10YiFEcyfnpZ9QRCxeFWba0VOCMcN+ep0TSm4bfryFJiFMMF7wAAD+/lgbPcTouFy3Y4otZGOlTCK1Pk1ENvnq2nunrwO5rqJQtTQ9/FWy7+k8RodPvvS8DTWbLy3IjkMym5DWUuPLoHdUXh5zhdx166d2DrU4ZWROfiznSqeek2r+0f1DmCamvx+PGFAKN6ftMWkqBcK0Dj9cmbs8US6ncHhMa9ubkiMeZ5hy8QKVZm91ePCBpsnUo01CqA67XbHukcybcgF/++w/LxWeGLZ6RIfY/H+VtqWQqj5dflFVzagJi5Vjsbn6+NkcPkIkFHenU1pGlnsxScIQSMGb855czfyrAde7T1jLpnKbcX87Ke9QGDQy5EOclLOmW9e8s+CG7PfDYaGGdPU0MPTM3+MhPbfkIaEd+ws7MOfXqe6gYvbFpsS68loaGEswBQtwRc3VHr7uDLDQd15E8ZgFjshGV2lr1MCRRxT8S0PoXK/5Ko0bTMYH6cEN3nyuAaJHeU8+DrF1pMjmvZr1pQiJKvbvTWUvAN8m84gM2raoyQh2f346QA2dCCzvo81OTKoJlpUvdmRdbIIv29rOPRZNAtOWqXp1ugspxcvjC58le3CadWuvhguytJB15p8AQrpnTBg3yS2edDyeBWdFWAAAAA==","c":4,"tk":["Fork","HODLster","ROB","TRADE"],"p":4,"f":17,"md":41,"led":1,"L":true},{"h":"solanatren59241","nm":"@SolanaTrending","av":"data:image/webp;base64,UklGRtQCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ILYCAAAwDQCdASowADAAPq1GmkmmI6KhLi5gwBWJbACdMuOHKQN3a//gM7gS7gIFO7lMwbdYylVY3M1zY80Iidh9zkkwdKU9uSQw3VH2Oe/frRvHoX7Xwl3eZFT0PDJibCfv8nAjNSX+4fJ2mMRjQq7D2LQ/EAAA/s+Dfnp5vDwx0v9GSeUzGl6kBPINiFhycokZQBzx8jFuSHldTYsUEfkoM0hxUGY6OqL/8vgrtpw9RVSr4qRPqf0a1l4w/exJ2rx0AJgJOfb3fFKpU+dhOmacKUJ3lvrQavBpLwoIy6jzGF5HxKm8K8b/qtFKxi5Q57BY6wsq/gyB4wnZC2BMv8LlrFIv+PR6Ka28Yoq/ZztKVc0lbriXk/6wU61lWsQ8sjIbEFmFFjh5Hp2w5xYLYCmXkHQt//L4j2lXV33BNzvpFFQcSszSMeHZ9lq7dy5SwDrf33VvVlQHv8Hku8fC1jKQ9t87QILv4t2TomvfO+ZUZ+yEFNcv6ZahgfWC4RNK4mB+tXqaamt5PX0bzfBWWmHf5OpHIvCLMjgebhXGfRS1DnNsFm13o/2G/Ib5oLQCY043um5mOxZrdaPNFiltFjZwhAxChSoy3ekVxTWlglzWy0+7kCjbqN8/6PRWPx3MwUyhBD1WAXSbBzLEMF+9a/dFMQVoTHHwb2TS+SkjVBIWap6qqUTjIQk96EOD90S6WLkWnlCqtbMvTBJocuI5j6t0zdB2zvPb0VNX+rRWY2X0IDD5vd3sxpLPqdpYIcj2bcnwRwWLDrvHBikd7NTdVU++IolpXvpq8YvUOmth5Tiljhq79YMhnbcEsw7yFYfhEeg8Tny+ZKi1N5oEjFNmEUN8hmSPtBZTjc4fCgWCxWJnay722v7aFNomBXiMO6WRBBcjfdsik3yFb/1nwai5ySdTQpnU3g72PDAA","c":2,"tk":["AIP","ROB"],"p":2,"f":2,"md":5,"led":2,"L":true},{"h":"mostviewcrypto","nm":"Most Viewed Crypto","av":"data:image/webp;base64,UklGRgoCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IOwBAAAwCwCdASowADAAPrVWpE4nJKMiI4oA4BaJaACtiQ78PngOfjPCmXCEQkH8073t7O0d2n18rHyoJnr8ST9OlrZVC2A3NMX8QdteGXsgbEeqXuME0S6YHSTzfa3HwWYhmaGQAAD+/kjiGEahpaqA/5HN+T5CS4Qfh2K7dohcvzGdqbKPBuFtOFENGeed+kxe0esi9uPFFDFN2y2LIKu5ivKaZIV2eix1v84wWAHcE+iG47KBf9HwqPMK3F6BN4C9GHu3zuVRNOltqwlKcoEt/Z856e0l/oAWRqkDWfbvRkQEiMnCVrEAwmVbU2qqiHIFjL+C+wG9J/SS+Ba8DsG+6SjxqVEvE/rlEditLPGUWywaOejhuvYPdtXLsSfs8PCHK0D7HARNhm4yvpMW/TiO+DL37aXk0L8jMOHfdDmOnuK+QlxTGuU3ZS+dt6xxSG1vr31SfdBy7ushHSi28LMQau5g6iF6Q8T4ubopS5Krmceq/+kgM0ttdJevlre8P2059C6KzI2iAToVkAe5YhQ1kKcvG1nK4DunbrH85UDG52OG/jjJNxDahzgITtVPMbdtzp8HepQBE8/z8E3peurNxPqN/sNDIJLPot1ZyV6duSvET0Epw1pxvidugOddugVSZbNcpN7GDTj8QRDAAAA=","c":2,"tk":["AIP","TRADE"],"p":2,"f":2,"md":7,"led":2,"L":true},{"h":"dexevents_1","nm":"Dex Events","av":"data:image/webp;base64,UklGRvQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4INYBAACQCQCdASowADAAPrVOn0snJCKhqrVdUOAWiUAXYcQBvLFZm5QE+XIAe4/6iOD/8ahnfjmuKnBL2KeBc98x1FeIWXyRfpygPvZmEO6huoby/G9exa4AAP7645gHevZrxiEeb0+fwI8FXnf88f0QphgyKbAVFrVYC3Jdv/BmfihfwA0m6Vb8B9XOSrx2z7bX3i6wtfBAQX46L9tBmOYWBwBcIapH2URRaeprAAlq2a35VgquiNUB/8+S5faFnu4Tm6wRumWsbUVUp0WVq1CRWbsD1lvFSHPNxDLmV6JUTd33GwP5axxxjBzD7T90fwnYrdFWloFUqCIZTLS/OfLdB+zzDwATuGt/AA+f1IsFfWKP3yjiulp77WQ7bY8cIvEtckZawcDVb7Gdiy+kHaC8HUabheJde4nndHDS2xadV0GSHWKbb8nYFA3yMI1uv+twSQuzeR0bLVut+Dyde79RGLUm7xEuqpI8mB9WDx30Fa/0PpAcAguapzEAevU6p2PQ9rShEM6c8vVz7ihT9YwJfJZyuoodW5t6RT09UGzqIaZOBkS1FaN/M2a7H0WD1bpfBw8isivDrpYquMd+mfRAUvMw2nR9MIsqr1v4nLUfp6XLdgAqfMYAAA==","c":2,"tk":["Fork","ROBINHOOD"],"p":2,"f":5,"md":42,"led":1,"L":true},{"h":"robinhoodradar","nm":"Robinhood Migration Radar","av":"data:image/webp;base64,UklGRp4BAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IIABAAAQCQCdASowADAAPrVYpU2nJSOiJygA4BaJYgDIU9ZnaDqvfnSqY/hbwNE4iOazBOrkrV3C7O2qqiotqBgI+D25wdRy9bvUcfais07+G7CzegAA/v5xFwxmH0PtF7aPZ5ajqDkBzqiCZeNZ1OBfg/s+4aB0kuJ9ZpGzWQKQEDGx/Vdw725URYQNpRc3KjcrwOX+LrUBVCPe+vkPhkUWXQZqtJiHP/G6eTxyGwJgm3GctjyrUJKslSlJYpjP4H404Q84D1gj9Ov/UG3Ki3tjnkADBathGi+KmLlQ++13NKe4KNMhqFgrWIu4cPMXiHmJEJ5fgj+F1nYihZLJ9Kwpl3d++F/pe4gZIl8SnM7rjgJ7dGKyhpju1V43xed5NzktsF8mUdaVv3lLiySHod9mtk5K8He/fSiD1ZX2FAjdNShd8urmwz7EkBqh89+vtCwQxhZYWGy6ZrJcv3gMfd/qc4suw0JGxgofTEvmM2qspt4C4pZsK+1SR8jFxKJ5RHAAAAA=","c":2,"tk":["HODLster","ROBOSHARE"],"p":2,"f":7,"md":13,"led":1,"L":true},{"h":"pf_streams","nm":"PumpFun","av":"data:image/webp;base64,UklGRrIBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IJQBAADwCACdASowADAAPrFMokqnJCMhqrqqqOAWCWQAz/z0XAI4EIXyiuenEuFigpBtzLw0Y5P8yJBMRaZyC9Z5l763G2sCgkGEXoWIkpK39mB6AAD+/KgUH0f1d5NpeXTRbG4J7fv//9QZkY5IlqlF1PaYLFFz/6YZL/7cZLDT9lQq0LT7F3/VgN0GMiMmaz/o6TZL+MQ13X65vRn+NxHBmU70P2tP7o9EZbGrbb9JuHda5OLnNNEppojtX9XT/7AEyJ/m/DJYtiVM48j9cM9eLH8z4EFIObFtx5qbEDWuiwuXfPJmr0Way9D2X6SxvBZtNMXqBSUr+uM2khJdSd9wt2t0xVzEIzr16F3+VKqpjTYbNqGQr/1r6sF+NDvrzw2zce2GQVzpRTzqhEWD8CJNPUgu/zgEHWgrNcJpxEYCqJgLi70Exf0QknJyeoF6zWGuWD+lXe7MP8m+mQjONz8D0lBmD3lziLROOf3IhB3mgTwYf8TBVOEOu2xyQZ2G4l0T8xf+y7s/uSvP40Aztyy31dprQAAAAA==","c":2,"tk":["HODLster","ROBINHOOD"],"p":8,"f":21,"md":177,"led":1,"L":true},{"h":"denvermalo8346","nm":"Denver Malone","av":"data:image/webp;base64,UklGRtgCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ILoCAAAQDQCdASowADAAPqlCnEmmI6MhNVgNUMAVCWwAnTLoSEET+1va4GO3P55n0GbzhvN9noGJI4+33NiV2t1cLumsK+WH2DeMce0mZ0RLv7AE9us7t50xN6sm6aOFRWBTJiho48ryIehriSbclWrzq870AAD++RCD06riTWiU70+NUCBqy3sbnNvQ40ylHazpBNkvbNU9Vf+zcJqnrripcI91M500US8KCXI04nTvwTDck7dTvaeocuB0bPtTJjTbjd1TpWUtXsOR3t99EU6naY+45EW7QBmf5D+CFYCEAS5YYlwv8jLX8ZIpTHoJdJLmjpoZ4C2yl7RpDcCs75Edz+MREgj8QQdXRcHjOX5xZOy9/6gTMX/tEGal7WOatj+hQvvW6B6EPHQsmSCb9W9UeVzkAfD5E7YDoMZ5WaXbqJNFxsKX6EHV/yvE1VIw5By4VQXCoNfWBdtPwdNtM6eORNmCct4F0KhexKdvf3mRh40rIGZQLh18xAog/kkvoO+zyX7gTrjaUujZjvQbegWG9QVQtQPg7t6/MPQIy41yHx569eh2k2q1sgx9MRUGCC6TOp3qifO3jQWtrtkW8o+AvCH3tYrkVZoEtQtHFa9D5Rw5O2VOz9H6johXHq1BFMgZfGZs1+f8zJJstoSyk282gTAkzAtr7u3oPxoc2ViPnHT9Yofo5D84kV60EDISWzdGxmLN92qtFALZtrX3/x8HrbErDkzziZ751ijV/PB2FWPFVYW46BCn3DGQl5h5kyvXLTVkDnm5eJd5lUYo2j2MGMxvGlTZvLHG/2cKrm/JQ/1ZM736I6zEETZr2tZUCgFmQrYi9QtO6bteW2s3mzhbWhlF2YXJEMnnDO2K0W32//TPSAlg8ue/hBUK3gwCOzvfAJKxPle8+KmId7Ju14fncyHIfuyN5j8xYAAAAA==","c":2,"tk":["ROBINHOOD","ROBOSHARE"],"p":2,"f":62,"md":62,"led":1,"L":true},{"h":"solinsidr","nm":"RobinOnSol💎","av":"data:image/webp;base64,UklGRqQBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IIYBAAAQCQCdASowADAAPq1Gm0mmI6IhLjv8yMAViUAYwQGNyt/bbkghU/TktrMKSssPsTy1C3K0v3WFJq4ETMB9TchVyZtkuDlkD+QCr7k/HFl56AAA/v63DiUtevj6kMpb8G/j8Ap7Ku+HL7wTHyWp6ybJ8CYS5et5c9t8V+vDnkPVfdlzTJu6oAIcOq3i05Oo/g00HIDZulB/HJhCgi4H5lxpeTLytSB1fbmcS8eAvt3Rc1qvSzxHtpQYVtcKsgwfqN0YFL4lyWNZr9b9eYpBQu0R7u9jmSntq8sUCxqKyEVgiIrpW3eTglzzr8goazxLMSHlyFIamvr878hvSKOLbRywlpDvbc3IivHfk53Oj+BTdwNo3k64kHHFF82iQqzBzV3cVm+QtQQyKKh1kuOvGU79hh8Kfhh4n9j+EWD/H5N8lHMURcm+PAUNgCXAKQ2MXAEyHyrYQGOAP/dVUDZgBdjj2+yjTnvHjNGW/vbUP0snqPpEInNfzmGylYIffWGMtMIdOXAAAAA=","c":2,"tk":["Fork","HODLster"],"p":5,"f":4,"md":12,"led":0,"L":true},{"h":"dex_kolwatcher","nm":"DEX Signals","av":"data:image/webp;base64,UklGRhICAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IPQBAADQCACdASowADAAPrVYpU8nJKMiI4gA4BaJaQ26gCvAunLXfTIucr6Z9gfygOpVRWL7pmvCGqursKnmbMmhIRx5PHQdkPGO1QsmrHBNS09oAP77d+2Jri6Sj2ZUaN/XXAAsCZbi6QftDwN4gf+EpDO3j89u0eypZibYkT33S+ZxNLKWtZvlsFBsnJmm6crl5LD/xfICA+cYLLF9bzv8s5lSz+IldGGUcwzunjv8YBsdcZSISsb5FpV6xMKUeKBFuS7jnlU5xefE4Rcib2bhWX97//cfR2Bs9YxgLZa9MUJEiyr+JY+VLYHYAYUfg5UscBHlj7/+yxmo5RfX8iB7TD2aukJ4TRFRL3QbUKjuGDzARireMrdzsn52Hmb9wN/+Hdtunvz4RfLSrZYC+SL3C7YpG4HThTTpuDUwzWEdqX0VbvfKqfmsPHOEW1l6lAuh7mXd07hTFhCobOmJyV/wQIgkJQu8lSZEdv7W4aTRizx/lJ8ckag5MzPM7cmlv1m1XuRpcl66zdyTJ5bw7fskIbg2fyZHrnMCd/5BBjGH3Vqz1E00hnjy9orQd7im2UamMCceUSexf3FEJxHpW3H9vmTC8wL08HaUfmE5/lIqmLHBnNVYh45ZxMQUU0yvG/f/92dA/C1YZJraVBB36Q2Oa4f0MwAAAA==","c":2,"tk":["Fork","ROBINHOOD"],"p":2,"f":15,"md":55,"led":0,"L":true},{"h":"robladeintern","nm":"Roblade","av":"data:image/webp;base64,UklGRpYBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IHgBAABQCQCdASowADAAPrVIoEsnI6MhrjQMyOAWiWoAdwXyDhBSYHUAegB0nv7AOOI4At5VEAhnmUv8iVIR7VjYPHCOVcw1/ujWTB0fRnYdl5D/rxrUAAD+9gBF/w1XzVCyuqBh//909f2nr+09e8l3oWN1YDjmoQT977jqeX2zTHWHGOlcgjOUADmPBdQPUuNRAgehT0dnGR/z4XnpMWf/n/jI2FH6gazRMLHP/63fNut+14eDES9DOnATDu7VRMGBU1Hfe8xQMoTxcHdf63O7aPf90sv1hH4MzA/RTN8YdMBwo6chwtIJI4Xi+S10g6R3U9t9O1LveajehLpXoMg+VqA0hmtfEvNC9cuayLUcCY1U/vHlgj5C2mENNgNx8WM0xE0rQhBcKvAos9/9kq5pLGQiJhgIE4CPiZ69Lv57a7pEpmxxjc4Q/rQhAvZ/Y4FVeHgZuIfpsmPT4vj1QO/An3C9zMymJvW0WosvcSSv9aiqaRNgo9hkjgAA","c":1,"tk":["ROB"],"p":2,"f":0,"md":115,"led":1,"L":false},{"h":"thexcaller","nm":"VictorCalls","av":"data:image/webp;base64,UklGRkAEAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ICIEAAAQEQCdASowADAAPpE2lEmloyIhPGgAsBIJbACsMu0Ip7o+BtwOeW0y+UW+q+8fxD+xPaPi2xAuyN9+UdZL73bUmklMmigB+ifRLzi6g36telr7CS2xDR5ZaddYCpxey/olL87W+mOad7nIG1sK7TKLZZ8u+X9bz/lzBC33fP2ezfdsK0LSIjHmiRAcfbDL5WMAAP76kAvazf4r/R3/SJ8s99ckpJtGbVpKqJH2fUg5oCuNtRyWre7j3kLO5LYOyt4NTJbQTBf+EJAlaPZ7InyZ6KfcF5vUAoOTTD0bsVlgwEFfInQV7hJ4ITOHyu8h7iys9ox8MWLstYfMgwl73MZXcFU+WjdgyYDsYiPh9w/y8P6JT2N5x6E/2OqX+z9HvGLGelfku6sp7zVD+PYH/D7ek6PKSh+PK1e8CmeG7P6b7mWoZ+Rv/qkV8KgqX6agHff93Bv7Pjsnb9Bu74LRDks8v9t/69/LM0AfY4E1+uLifiAofmQRMKfDWmx0/RzyvS54As/Owu8LTGSOGWWF2ovNv215FOaP8Ex2n+713zX1GBSDf0Se/cwYF7rUAV53NA0SvLm9Nzz/+kPHA79NhM4HSIvtY9RO0ln1f5ghrE7ydHTFF5HjIlBE42X6BtGkPv7ibqDhmQZlNFa4Y3e9FrrZGtmEH3EoaIirlfh3+V6/6G1Nay9NJPxW/hyiW/kRxr0pfqrX7usGGYgAfzuAnira5W/qeffNJF1oS0UG8NvRy2LbRym9k6qQxGS31ANsFB6Utm8/vS0t7urirefAM/bICmnjREvz8d3XYE7OjtXGORLKNsF7hThedzbQEfGTEIVH+Ceu/bPlBrjVEfAwUUNEbTE68en0Q7XJYBuqK5szneL9BQlTjeXMvChdWg92d0NMrgChS3TbWknHf7dOlKDhQnVTcDvJ8oss1PlSoowwh5upmOKqKUxzUQ6O3TF1uhf3W3epmYS4Auyu0NO5SyeQTQuNgEEAI/ujQADVBIg5GVdofKgNVm30o0eE9Jun2ZkJPySi2wq2cuM0gN+qbwKezxhabKEd/kjB/cp3SNF6BqjsjMlRG7zNorgQZTBE5F0CPWUPANjZMG2oMP0KBym+SqIqx4kfDXsTkXSjaOHepy8xohJx6l3xdzvsEQ4u6ev4/+eMrU7BQTt7fxf1kQBmoMwr56QmNlwwjP0kxTL563R7W8mUFDp1L+Eab7ouD52HquKXLm9ypkQDn+Anz7u9qLjwduEkvVG8jiPeoh4IUvL4iYFkyhbpJRTLJta8N0rpJBteB23yXRcVl5LnAqDpQVqG4w+KoQ+8mGoLjqvaQ6jHZkhYony2H0el40+ex6KxRKkf+sPeZYkhtJ+mgHxUEg7tBB69ouez1EBCYSafOApKTijm9KuAKa75s2en+iAAAA==","c":1,"tk":["ROBOSHARE"],"p":1,"f":2,"md":2,"led":1,"L":false},{"h":"shdow_sol","nm":"SHDOW 💎","av":"data:image/webp;base64,UklGRrAAAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IJIAAACQBQCdASowADAAPrFQoUunJKMhqrqpWOAWCWcAyRApt8zCtxGUPtab9/jpT9F7PZslIS09AAD+9vDwyZi+10sHfrufD8fH5V2W6G+R/URjH95XyeciwpSTtgkbDN/ZjADRQ8KJXWHkVoIJ3fhgFksCeo/ChKJRQzXRZk1I4gGbftTNGfOMKvqBjMNMTE+Db/YAAA==","c":1,"tk":["HODLster"],"p":2,"f":2,"md":2,"led":1,"L":false},{"h":"bitecong","nm":"Green onions","av":"data:image/webp;base64,UklGRpgDAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IHoDAAAwEACdASowADAAPqVAlkmmI6GhMcwAwBSJbACdMoR2j7B5glhbE8byu96s9uJ40HrgabBvQVmCbSvs3gPXB9JbUZa+lKZz9ALbQFC2NRF7QJP1736D0tNU68EUebB+uFXYHRrtB9g3o2DYqXsgQDshrMy+aROybT9SlgYY1YL+k9xLR1EWUVc2EgAA/q1z4+tZrh3EXXiPyYuy1Lx2hx0/+X6z/iHo1OQkPqWEOlDXbZ69jjL6UtqC5NZNsTJEM539/ZWwLmf0whwb7MV2m//rn+Z3E3uf4O3w/2rR+r0ObYB60Sk/+YDlU92ktQ+1C0ia+XjTZK9fjERqVpMVa28bDEobidnBrOzMQdn6etTa5cJ6M2QWCm8EXRBRb+YIVqOnDVGWOevOXYen+kPBWEOLBrvC7MVJAfsB+zq+dgbedFau8K6Obg8/3z3LBi/hqtasI24OiP7k+xHob5rCnHNvgc87nHAgdpvSi6a13WaHACAWb6tDpafV3LKJ8+yy8ObNYw357/UBCBNEAOGUK3qYMfMiXlcxLrjFi1jltRhfAgyh4ByzeoDVvFdhLijpt2OI/cexNGXv46p7BYeSkrNt4HtElqOnKlXCJp0Pn0XlXWYTOADIpB+B7qp1a8EAsTwo+Hs6AElqXPmcJl+J2AyktdJrnJcpt7B7W36CPSMubb4Zw7OQP2Wf585SWXxiUbOGxq1pLaH2i4G4XUeTzclpdMnW1yBAErly+RQlq48IW/n/ARZkS6XiCcbJoc4t0kL5fETDw0YjIo+ZvuIcNu1Hv+5lcndr/Y/ZRTpVZ7nqrjo0iW0G3zOIG66FbXVBEF39EBC1TGpZDnSMhG0MhT3ragVRPgbty2e/AErG0OH22rqTyk554qQmUv/8x8wNJgZuwaeBaQsAjR25XfGab8tiJ/4S+ksEWyyeCnl2IBAJ51F+cfiQTu/KgXSXbvfmiKnBhH2PgoAFC55m8Iv3J0Lb/dJNR0p9OjS96VjN5vYT8Yz/hRqFpvzQ4r+6mAPv+amV2NyZhF2/NScoNXkcvsU8yp1vvRGVcGSv/jdpnN9PP96mhM35XiB80/T3emm2HN2WrugG7HqubTwQjx1osjyvO2xEmdwC+yeWHGyuPlo3My9BPIUbubcGoHGe76dJrNNx0HF+CVdjIszNatLXkfa2zItvJbzrFxoAAA==","c":1,"tk":["HODLster"],"p":1,"f":2,"md":2,"led":1,"L":false},{"h":"viralpairs","nm":"Viral Pair Watcher","av":"data:image/webp;base64,UklGRvwBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IN4BAACQCgCdASowADAAPrVOoE0nJCMiJzgMkOAWiWkADpnK58K8qJgBpWWed3MZhE2dEkjqofbgu3AHfVPK5HG0z2xuxmz0t1PmqnYLBX7FvIgMoqhetHmRypR7cVX0SAAA/v2byXyHP+gA3/AL9pgIF1PyYhdUU5l2KT6M9pikjf/UdvoVbp7u/Ty90gfEIf2feteSxf2W4lfr58p4RTu/M+APc1jEZ8VrGv3XW2LoiIkb7OxoxW3pv/ZZ7hxDgUSA6oZRDY/2I6bd1/IGxp5CzmgfEei+lrbFYXWpZwNU3Q1s0BuXXtUlKcSP3t2r6w9Btx6fw29Xh55n/aZQYoxwdHPRZU8Q3y5D0mMklr51qLp50MnmHRg7eWC6FJ28XN+zrztMOgr3/KN6jGve9OF5agueEY68Mirdf3PPttP/2C9v2NxVNKqhXzGdMVC798OVne5O5NFyNuFVnIStxD9jTQoJDW7HjF9l/0NaijG7CnNQhPyw8sr//1NDcgk5XaTUrSp3k4vrr7AS2nWySGevzPBfLEOqZpueEfsUimAzMMpT3pOhziKgIXeMajVHTlS9j6I/GPlZaneAuK0c6+6ubIVJjMLim1Tl2/x1fidKkw5/bld4zdmwUwi9yq5PkAAA","c":1,"tk":["ROB"],"p":1,"f":3,"md":3,"led":1,"L":false},{"h":"trendscanai","nm":"TrendScan AI","av":"data:image/webp;base64,UklGRtgBAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4ILoBAABwCgCdASowADAAPrFWn02nJKKiJzgJIOAWCWUA0TO/zceCttWszjxxJgH6qqFYbG8m0cCZQSbLz5bfrkFVu7NIAniVjVy0Xv8wzLEPUawEokxcYmX92Ql6nawwAAD+/ocHrZzOwmNBc5EPx/czFPP1Y9AueAviTPi9bN+sS3nGonLSwSmOBv8ZkZ0rR/aKuH5XjJ1SJWrIc/pbUuRGs9gN6WLuNxaA72xenhGldRSfamEL/jbwpitAydYuu5o7RHGGg8YFQE3vN+cwrHRdkRKNyqUPsXvpWJlmXf/iw3fzQjQ/K48dCFa/5aUm10lTJSNyPb3enE5QdVhNOhHDyL2o46c3QElqakTWZOctr4QZ7h/qhUBGx4gl2wJUdcg/sLKgPCYpp3weOC2gn/okMTGeLGP0IKsluW+3OSJhN02QPP0ZPrVreBGRCCvDzbxy7SghxYX0rX9Npr8fkVrTSnU5BZGSWtE2LjaveKKj9r8KrOVmzXQCSCakXBlfWPvQR8fCEjF0Qg5VCEH+j5VCxUy7zdHlTduOGiFgscQX2AsXGgt05SUtBiQAXBh6amdhP39O47VAofRQ+EAA","c":1,"tk":["HODLster"],"p":1,"f":3,"md":3,"led":1,"L":false},{"h":"dexpaidpanther","nm":"Dex Paid Panther","av":"data:image/webp;base64,UklGRsgCAABXRUJQVlA4WAoAAAAgAAAALwAALwAAVlA4IKoCAACQDQCdASowADAAPrVMoEqnJCMhrjv5mOAWiWwAuzlBVF5Az6SIotEK3bUbkC9gJ9pjTlScD9KmzumRlhqpZL706+2vKGAxDQ8746tzOqfSQxv594F/F1xycTNxZil/sQFrmttUAasqP7Xo+Zq3050aq6M6OAAA/v7X4XFfR/L3x6gGk9Pl8iWm7mFVVRiscWv+3msc+KUNau6jgnRagzfs0PyJWWQARbfv38KvsYaCZ8o0GiqXvemPLqth9IlHam+I3NV63E+4nTcWVKs8oyQN/7E/3obh81zjbwDvqJRJQ6wogOiLB25W4kGMp0bqU06p5Xvay8s+z15rvd8tusiuhfdJvzu4QnlNeRtXr/EX7XnlDZVCzwYeU96RGN20LrWcInIVVczOTKP2XrZHNQdK0nvtpK8S3/PqWmFj+Iqeyh6+NqE571lrbqlVG8sGOoyqa+JHhYSb7qJbDwmI6fpm/KsmiKWi2Jhfx+6XfnJ6sJhGDNW2hmH6Ybe2zft/i4ktUmBsTjkQ0bNLqFcjrGXNehkdUPNGvVmSHwJBeQda34GxqtS6SZ7D63oCS0s6vTyg+RPB4F1SkeylKqAIg73Yo/mVzVeuoVHVDDD9Abe4t1iMrJkeyxboXqbEqPm/K0Xp78B8mVapbN94YMNaikoFq46V30Tu8hjtTybm8ytZoUSGPHn7/BCVDrtz8Q6fErSs5UNesjN/pkw3JkaxKpr4OGraqFJIP3yFk7/+91LFPxAykuIzrspJxrgBQdfU5lPQ8EaBWcHeVzNHkL4CTncNHbc3p04zSarapR/maeQqlpdFDSrB3jI0NSvDB4xIvDLCYFIevSFxlujVRmCgln06jCACEdU9GKWa4LWT//jMIOHj6aDQYNXjDZ5fxrVd8J75cgG8URG3CIAA","c":1,"tk":["Fork"],"p":1,"f":4,"md":4,"led":1,"L":false}],"accs":{"total":68,"listed":9,"early":16}};
+var reduce=matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+var $=function(i){return document.getElementById(i)};
+function col(s){return s==='SPIKE'?'var(--red)':s==='WARM'?'var(--lime)':'var(--steel)'}
+var RGB={SPIKE:[255,90,60],WARM:[219,253,82],QUIET:[95,139,150]};
+
+/* ---------- the background field ----------
+   One mark per launch, almost all of them quiet, a few going loud - the same
+   thing the page is about, running behind it. Alpha is capped hard so this can
+   never fight the text in front of it, and prefers-reduced-motion gets a single
+   still frame. */
+(function(){
+  var cv=$('bg'); if(!cv) return;
+  var ctx=cv.getContext('2d'), DPR=Math.min(2,window.devicePixelRatio||1);
+  var marks=[], t=0, raf=null, W=0, H=0;
+  var HOT={SPIKE:[255,90,60],WARM:[219,253,82]};
+
+  function seed(){
+    W=innerWidth; H=innerHeight;
+    cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    var n=Math.min(190,Math.round(W*H/9000));
+    marks=[];
+    for(var i=0;i<n;i++) marks.push({
+      x:Math.random()*W, y:Math.random()*H,
+      r:1.1+Math.random()*1.8,
+      a:0.09+Math.random()*0.13,          // the resting dimness of a quiet coin
+      ph:Math.random()*Math.PI*2,         // so they do not breathe in unison
+      life:0, hot:null
+    });
+  }
+
+  function flare(){
+    var m=marks[(Math.random()*marks.length)|0];
+    if(!m||m.life>0.2) return;
+    m.life=1; m.hot=Math.random()<0.26?'SPIKE':'WARM';
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<marks.length;i++){
+      var m=marks[i];
+      var tw=m.a*(0.72+0.28*Math.sin(t*0.012+m.ph));
+      if(m.life>0){
+        var c=HOT[m.hot], k=m.life;
+        ctx.beginPath();
+        ctx.arc(m.x,m.y,m.r+k*2.4,0,6.2832);
+        ctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+Math.min(0.34,k*0.34)+')';
+        ctx.shadowColor='rgba('+c[0]+','+c[1]+','+c[2]+','+(k*0.4)+')';
+        ctx.shadowBlur=14*k; ctx.fill(); ctx.shadowBlur=0;
+        // the mark leaves a short vertical trace, the way a spike does on a tape
+        ctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+','+Math.min(0.15,k*0.15)+')';
+        ctx.fillRect(m.x-0.5,m.y-26*k,1,26*k);
+        m.life*=0.982;
+        if(m.life<0.02){m.life=0;m.hot=null}
+      } else {
+        ctx.beginPath();
+        ctx.arc(m.x,m.y,m.r,0,6.2832);
+        ctx.fillStyle='rgba(120,132,148,'+tw+')';
+        ctx.fill();
+      }
+    }
+    t++;
+    if(t%26===0) flare();
+    raf=requestAnimationFrame(draw);
+  }
+
+  function still(){
+    ctx.clearRect(0,0,W,H);
+    marks.forEach(function(m,i){
+      if(i%23===0){m.life=0.55;m.hot=i%3?'WARM':'SPIKE'}
+    });
+    t=0;
+    for(var i=0;i<marks.length;i++){
+      var m=marks[i];
+      if(m.life>0){ var c=HOT[m.hot];
+        ctx.beginPath(); ctx.arc(m.x,m.y,m.r+1.3,0,6.2832);
+        ctx.fillStyle='rgba('+c[0]+','+c[1]+','+c[2]+',.16)'; ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,6.2832);
+        ctx.fillStyle='rgba(120,132,148,'+m.a+')'; ctx.fill();
+      }
+    }
+  }
+
+  var to=null;
+  addEventListener('resize',function(){
+    clearTimeout(to);
+    to=setTimeout(function(){ seed(); if(reduce) still(); },180);
+  });
+  // a tab nobody is looking at should not be burning a core
+  document.addEventListener('visibilitychange',function(){
+    if(reduce) return;
+    if(document.hidden){ cancelAnimationFrame(raf); raf=null }
+    else if(!raf) draw();
+  });
+
+  seed();
+  if(reduce) still(); else draw();
+})();
+
+/* ---------- the launch field: 24k a day, almost all silent ---------- */
+(function(){
+  var cv=$('field'), ctx=cv.getContext('2d'), DPR=Math.min(2,window.devicePixelRatio||1);
+  var COLS=26, ROWS=15, cells=[], t=0, raf=null;
+  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++)
+    cells.push({c:c,r:r,h:Math.random()*0.08,v:0,st:'QUIET',cool:0});
+  function size(){
+    var w=cv.clientWidth, h=cv.clientHeight;
+    cv.width=w*DPR; cv.height=h*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  function spark(){
+    var k=cells[(Math.random()*cells.length)|0];
+    if(k.cool>0) return;
+    k.v=0.55+Math.random()*0.5; k.st=Math.random()<0.34?'SPIKE':'WARM'; k.cool=110;
+  }
+  function draw(){
+    var w=cv.clientWidth, h=cv.clientHeight;
+    ctx.clearRect(0,0,w,h);
+    var cx=w*0.5, cy=h*0.62, ux=w/COLS*0.86, uy=ux*0.42, hz=Math.min(96,h*0.30);
+    var order=cells.slice().sort(function(a,b){return (a.r+a.c)-(b.r+b.c)});
+    order.forEach(function(k){
+      var gx=k.c-(COLS-1)/2, gy=k.r-(ROWS-1)/2;
+      var x=cx+(gx-gy)*ux*0.5, y=cy+(gx+gy)*uy*0.5;
+      k.h+=(k.v-k.h)*0.10; k.v*=0.975;
+      if(k.cool>0){k.cool--; if(k.cool===0){k.st='QUIET'}}
+      if(k.v<0.02){k.v=Math.random()*0.05}
+      var hh=6+k.h*hz;
+      var rgb=RGB[k.st]||RGB.QUIET, a=0.16+k.h*0.75;
+      var bw=ux*0.40, bh=uy*0.40;
+      ctx.beginPath();
+      ctx.moveTo(x,y-hh); ctx.lineTo(x+bw,y-hh+bh); ctx.lineTo(x,y-hh+bh*2);
+      ctx.lineTo(x-bw,y-hh+bh); ctx.closePath();
+      ctx.fillStyle='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+Math.min(1,a)+')';
+      if(k.h>0.3&&k.st==='SPIKE'){ctx.shadowColor='rgba(255,90,60,.85)';ctx.shadowBlur=16}
+      ctx.fill(); ctx.shadowBlur=0;
+      ctx.beginPath();
+      ctx.moveTo(x-bw,y-hh+bh); ctx.lineTo(x,y-hh+bh*2); ctx.lineTo(x,y+bh*2-2);
+      ctx.lineTo(x-bw,y+bh-2); ctx.closePath();
+      ctx.fillStyle='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+Math.min(.55,a*0.42)+')'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x+bw,y-hh+bh); ctx.lineTo(x,y-hh+bh*2); ctx.lineTo(x,y+bh*2-2);
+      ctx.lineTo(x+bw,y+bh-2); ctx.closePath();
+      ctx.fillStyle='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+Math.min(.4,a*0.26)+')'; ctx.fill();
+    });
+    t++;
+    if(t%46===0) spark();
+    if(t%9===0) spark();
+    raf=requestAnimationFrame(draw);
+  }
+  function boot(){ size(); if(reduce){ for(var i=0;i<40;i++) spark(); draw();
+      cancelAnimationFrame(raf); } else { if(!raf) draw(); } }
+  addEventListener('resize',function(){size()});
+  boot();
+})();
+
+
+/* ---------- the reader: a real run, picked at random ----------
+   Two reels, both verbatim out of the collector's database: $HODLster between
+   11:45 and 12:00 UTC on 9 September, and $Fork between 13:00 and 13:20. One
+   is chosen per page load, so the page is not the same eighteen cards forever.
+
+   The footer is not a running total of the cards on screen. It reports the
+   five-minute window the detector actually rated, so a clip cannot inflate a
+   number the instrument published.
+
+   A red edge means the account is on the list: it posted about more than one
+   watched token that day. That is `trace.callers`, computed - and it changes
+   nothing. The detector never sees it. */
+(function(){
+  var feed=$('rFeed'); if(!feed) return;
+  var R=D.reels[(Math.random()*D.reels.length)|0];
+  var SEQ=R.seq, WINS=R.win, OURS=R.ca;
+  var SHORT=OURS.slice(0,10)+'…'+OURS.slice(-4);
+  function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function cut(a){return a.slice(0,10)+'…'+a.slice(-4)}
+  function mark(t){
+    t=esc(t).replace(/\s*\n\s*/g,' · ').trim();
+    t=t.replace(new RegExp(OURS,'gi'),'<span class="ca">'+SHORT+'</span>');
+    t=t.replace(/0x[0-9a-fA-F]{40}/g,function(m){
+      return '<span class="ca bad">'+cut(m)+'</span>'});
+    t=t.replace(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g,function(m){
+      return '<span class="ca bad">'+m.slice(0,8)+'…'+m.slice(-4)+'</span>'});
+    t=t.replace(/\$[A-Za-z][A-Za-z0-9]{1,11}\b/g,function(m){
+      return '<span class="tk'+(m.toLowerCase()==='$'+R.sym.toLowerCase()?'':' bad')+'">'
+        +m+'</span>'});
+    return t;
+  }
+  /* Why a post was refused, read off the post the way the matcher reads it. */
+  function why(p){
+    var others=(p.x.match(/0x[0-9a-fA-F]{40}/g)||[]).filter(function(a){
+      return a.toLowerCase()!==OURS});
+    if(others.length) return 'somebody else&rsquo;s contract';
+    if(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/.test(p.x)) return 'an address on another chain';
+    return 'the ticker, nothing tying it here';
+  }
+  function card(p){
+    var el=document.createElement('div');
+    el.className='post '+(p.hit?'hit':'miss')+(p.L?' on':'');
+    el.innerHTML='<a class="pmeta" href="'+p.u+'" target="_blank" rel="noopener noreferrer">'
+      +'<img class="av" src="'+p.av+'" alt="" width="27" height="27">'
+      +'<span class="who"><span class="nm">'+esc(p.nm)+'</span>'
+      +'<span class="hd">@'+p.h+'</span></span>'
+      +'<span class="rt">'
+      +(p.L?'<span class="listed">on the list &middot; '+p.L+' tokens</span>':'')
+      +'<span class="t">'+p.t+'</span></span></a>'
+      +'<div class="ptxt">'+mark(p.x)+'</div>'
+      +'<div class="verdict'+(p.hit?'':' off')+'">'
+      +'<span class="badge">$'+R.sym+'</span>'
+      +(p.hit
+        ? '&#10003; counted &middot; '+(p.m==='address'?'carries the contract':'ticker + chain')
+        : '&times; not counted &middot; '+why(p))
+      +'</div>';
+    return el;
+  }
+  var lastW=-1;
+  function setWindow(i){
+    if(i===lastW) return; lastW=i;
+    var w=WINS[i], st=$('rState'), foot=$('rFoot');
+    $('rWin').textContent=w.lb+' UTC';
+    st.className='rstate st '+w.s; st.textContent=w.s.toLowerCase();
+    $('rCount').textContent=w.r; $('rAcc2').textContent=w.a;
+    var m=$('rMult2');
+    m.textContent=w.b?w.x.toFixed(1)+'×':'—';
+    $('rMultL').textContent=w.b?'vs normal ('+w.b.toFixed(2)+' for this age)'
+                              :'no baseline yet';
+    m.style.color=w.s==='SPIKE'?'var(--red)':w.s==='WARM'?'var(--lime)':'var(--dim)';
+    foot.className='rfoot'+(w.s==='SPIKE'?' fire':'');
+  }
+  var i=0,timer=null;
+  function step(){
+    if(i>=SEQ.length){
+      clearInterval(timer);
+      setTimeout(function(){
+        R=D.reels[(Math.random()*D.reels.length)|0];
+        SEQ=R.seq; WINS=R.win; OURS=R.ca; SHORT=OURS.slice(0,10)+'…'+OURS.slice(-4);
+        i=0; lastW=-1; feed.innerHTML='';
+        timer=setInterval(step,1000);
+      },5000);
+      return;
+    }
+    var p=SEQ[i++];
+    setWindow(p.w);
+    feed.appendChild(card(p));
+    while(feed.children.length>3) feed.removeChild(feed.firstChild);
+  }
+  if(reduce){
+    SEQ.slice(-3).forEach(function(p){feed.appendChild(card(p))});
+    setWindow(SEQ[SEQ.length-1].w);
+  } else { setWindow(0); timer=setInterval(step,1000); step(); }
+})();
+
+/* ---------- who keeps showing up ----------
+   `trace.callers` over the same database: how many of the watched tokens an
+   account posted about, how early its first post landed, how often it was in
+   the first three voices. Nine accounts cleared two tokens in a day; those get
+   the red edge. It is a mark on a row and nothing else. */
+(function(){
+  var box=$('callers'); if(!box) return;
+  function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  var h='';
+  D.callers.forEach(function(c){
+    h+='<a class="rejrow'+(c.L?' on':'')+'" href="https://x.com/'+c.h+'" '
+      +'target="_blank" rel="noopener noreferrer">'
+      +(c.av?'<img src="'+c.av+'" alt="" width="27" height="27">'
+            :'<span class="mono">'+esc(c.h.slice(0,2).toUpperCase())+'</span>')
+      +'<div><div class="top"><span class="nm">'+esc(c.nm)+'</span>'
+      +'<span class="hd">@'+c.h+'</span>'
+      +(c.L?'<span class="tag">on the list &middot; '+c.c+' tokens</span>'
+           :'<span class="tag q">'+c.c+' token</span>')
+      +'</div><div class="bd">first post <b style="color:var(--txt)">+'+c.f+'m</b> '
+      +'after launch &middot; median <b style="color:var(--txt)">+'+c.md+'m</b> &middot; '
+      +c.p+' counted post'+(c.p===1?'':'s')
+      +(c.led?' &middot; among the first three voices on <b style="color:var(--lime)">'
+        +c.led+'</b>':'')
+      +' &middot; <span style="color:var(--dim2)">'+c.tk.map(function(t){return '$'+t})
+        .join(', ')+'</span></div></div></a>';
+  });
+  box.innerHTML=h;
+})();
+
+/* ---------- rolling numbers ---------- */
+function roll(el,to,dp,pre){
+  pre=pre||'';
+  if(reduce){el.textContent=pre+to.toFixed(dp);return}
+  var t0=null,dur=900;
+  (function f(t){ if(!t0)t0=t; var p=Math.min(1,(t-t0)/dur);
+    el.textContent=pre+(to*(1-Math.pow(1-p,3))).toFixed(dp);
+    if(p<1)requestAnimationFrame(f); else el.textContent=pre+to.toFixed(dp);})(0);
+  requestAnimationFrame(function(ts){});
+}
+
+
+/* ---------- step visuals ---------- */
+(function(){
+  var sets={1:[2,3,2,4,3,2,3,5,3,2,4,3],2:[3,2,3,3,2,3,4,3,2,3,3,2],
+            3:[2,3,2,4,3,2,14,5,3,2,3,2]};
+  Object.keys(sets).forEach(function(k){
+    var el=document.querySelector('[data-vis="'+k+'"]'), v=sets[k], h='';
+    var max=Math.max.apply(null,v);
+    v.forEach(function(n,i){
+      var cls=k==='3'&&n===14?'hot':(k==='2'&&n>=4?'warm':'');
+      h+='<span class="'+cls+'" style="height:'+(reduce?(n/max*100):4)+'%"></span>';
+    });
+    el.innerHTML=h;
+    if(!reduce) setTimeout(function(){
+      [].forEach.call(el.children,function(s,i){
+        setTimeout(function(){s.style.height=(v[i]/max*100)+'%'},i*45);});},260);
+  });
+})();
+
+/* ---------- the example chart ---------- */
+var W=D.win, MAXM=125, MAXY=15, VW=660, VH=250, P={l:30,r:16,t:22,b:26},
+    PW=VW-P.l-P.r, PH=VH-P.t-P.b;
+function X(m){return P.l+Math.min(m,MAXM)/MAXM*PW}
+function Y(v){return P.t+PH-(v/MAXY)*PH}
+function normAt(m){var v=null;D.coh.forEach(function(c){if(m>=c.lo&&c.n!=null)v=c.n});return v}
+(function(){
+  var g='';
+  [0,5,10,15].forEach(function(v){
+    g+='<line class="gl" x1="'+P.l+'" y1="'+Y(v)+'" x2="'+(VW-P.r)+'" y2="'+Y(v)+'"/>'
+      +'<text class="ax" x="'+(P.l-6)+'" y="'+(Y(v)+3.4)+'" text-anchor="end">'+v+'</text>';});
+  [0,30,60,90,120].forEach(function(m){
+    g+='<text class="ax" x="'+X(m)+'" y="'+(VH-8)+'" text-anchor="middle">'+m+'m</text>';});
+  var d='',st=false;
+  for(var m=0;m<=MAXM;m++){var n=normAt(m); if(n==null) continue;
+    d+=(st?'L':'M')+X(m)+' '+Y(n)+' '; st=true;}
+  g+='<path class="nl" d="'+d+'"/>'
+    +'<text class="nlab" x="'+X(57)+'" y="'+(Y(0.1)-9)+'">normal for a token this age</text>';
+  var bw=Math.max(5,PW/MAXM*5-2);
+  W.forEach(function(w){
+    var x=X(w.m)-bw/2, y=Y(w.r);
+    g+='<rect class="bR" x="'+x+'" y="'+(P.t+PH)+'" width="'+bw+'" height="0" rx="2" fill="'
+      +col(w.s)+'" data-y="'+y+'" data-h="'+((P.t+PH)-y)+'"'
+      +(w.s==='SPIKE'?' style="filter:drop-shadow(0 0 9px rgba(255,90,60,.7))"':'')+'>'
+      +'<title>'+w.m+' min old · '+w.r+' posts · '+w.a+' accounts · '
+      +(w.k?w.x.toFixed(1)+'× vs '+w.b.toFixed(2)+' normal':'no baseline yet')+' · '+w.s
+      +'</title></rect>';});
+  var sp=W.filter(function(w){return w.s==='SPIKE'})[0];
+  if(sp){var sx=X(sp.m),sy=Y(sp.r);
+    g+='<path class="hook" d="M'+(sx+4)+' '+(sy-4)+' L'+(sx+32)+' '+(sy-21)+'"/>'
+      +'<text class="co" x="'+(sx+37)+'" y="'+(sy-23)+'">'+sp.r+' posts'
+      +'<tspan x="'+(sx+37)+'" dy="13">'+sp.x.toFixed(1)+'× normal · '+sp.a+' accounts</tspan></text>';}
+  $('chart').innerHTML=g;
+  var bars=[].slice.call(document.querySelectorAll('.bR'));
+  bars.forEach(function(r,i){
+    if(reduce){r.setAttribute('y',r.dataset.y);r.setAttribute('height',r.dataset.h);return}
+    r.style.transition='y .55s cubic-bezier(.2,.7,.3,1) '+(i*60)+'ms,height .55s cubic-bezier(.2,.7,.3,1) '+(i*60)+'ms';
+    requestAnimationFrame(function(){requestAnimationFrame(function(){
+      r.setAttribute('y',r.dataset.y); r.setAttribute('height',r.dataset.h);});});});
+  if(sp){
+    $('kAge').textContent=sp.m+' minutes'; $('kMult').textContent=sp.x.toFixed(1)+'×';
+    $('kBase').textContent=' vs '+sp.b.toFixed(2)+' normal';
+    $('kAcc').textContent=sp.a+' separate accounts, not one voice repeating';
+    var s=''; for(var i=0;i<sp.a;i++) s+='<i></i>'; $('kDots').innerHTML=s;
+    roll($('kRate'),sp.r,0);
+  }
+})();
+
+/* ---------- the desk: what counted, and what did not ---------- */
+(function(){
+  var h='';
+  D.rows.forEach(function(t){
+    h+='<tr><td class="id">$'+t.s+'<span style="color:var(--dim2);font-size:10.5px"> &middot; '
+      +t.a+'&hellip;</span></td><td class="hide n">'+t.p+'</td>'
+      +'<td class="n" style="color:'+(t.c?'var(--txt)':'var(--dim2)')+'">'+t.c+'</td>'
+      +'<td class="hide n">'+t.ac+'</td>'
+      +'<td><div style="display:flex;align-items:center;gap:9px">'
+      +'<span class="n" style="min-width:20px;color:var(--txt)">'+t.pk+'</span>'
+      +'<span class="mini"><i style="width:'+Math.min(100,t.pk/14*100)+'%;background:'
+      +col(t.st)+'"></i></span></div></td>'
+      +'<td class="r n" style="color:'+col(t.st)+'">'+(t.x?t.x.toFixed(1)+'\u00d7':'\u2014')+'</td>'
+      +'<td class="r"><span class="st '+t.st+'">'+t.st.toLowerCase()+'</span></td></tr>';});
+  $('rows').innerHTML=h;
+
+  function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  var r='';
+  D.rej.forEach(function(x){
+    var body=esc(x.x).replace(/\s*\n\s*/g,' \u00b7 ')
+      .replace(/0x[0-9a-fA-F]{40}/g,function(m){
+        return '<span class="ca bad">'+m.slice(0,10)+'\u2026'+m.slice(-4)+'</span>'})
+      .replace(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g,function(m){
+        return '<span class="ca bad">'+m.slice(0,8)+'\u2026'+m.slice(-4)+'</span>'})
+      .replace(/\$[A-Za-z][A-Za-z0-9]{1,11}\b/g,'<span class="tk bad">$&</span>');
+    r+='<a class="rejrow" href="'+x.u+'" target="_blank" rel="noopener noreferrer">'
+      +'<img src="'+x.av+'" alt="" width="27" height="27">'
+      +'<div><div class="top"><span class="nm">'+esc(x.nm)+'</span>'
+      +'<span class="hd">@'+x.h+'</span>'
+      +'<span class="why">&times; '+x.why+'</span></div>'
+      +'<div class="bd">'+body+'</div></div></a>';});
+  $('rej').innerHTML=r;
+})();
+
+/* ---------- age curve ---------- */
+function drawCurve(){
+  var max=0; D.coh.forEach(function(c){if(c.n)max=Math.max(max,c.n)});
+  var h='';
+  D.coh.forEach(function(c){
+    var k=c.n!=null;
+    h+='<div class="crow'+(k?'':' none')+'"><span class="lb">'+c.l+'</span>'
+      +'<span class="bx"><i data-w="'+(k?Math.max(2,c.n/max*100):3)+'" style="width:0"></i></span>'
+      +'<span class="vl n">'+(k?c.n.toFixed(2)+' / window':'not measured')+'</span></div>';});
+  $('curve').innerHTML=h;
+  [].forEach.call(document.querySelectorAll('#curve .bx i'),function(b,i){
+    if(reduce){b.style.width=b.dataset.w+'%';return}
+    setTimeout(function(){b.style.width=b.dataset.w+'%'},60*i+50);});
+}
+
+/* ---------- tabs ---------- */
+var tabs=[].slice.call(document.querySelectorAll('.tab'));
+function show(name){
+  tabs.forEach(function(t){
+    var on=t.dataset.p===name;
+    t.setAttribute('aria-selected',on?'true':'false');
+    $('p-'+t.dataset.p).hidden=!on;});
+  if(name==='age') drawCurve();
+}
+tabs.forEach(function(t){
+  t.addEventListener('click',function(){show(t.dataset.p)});
+  t.addEventListener('keydown',function(e){
+    var i=tabs.indexOf(t), n=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:-1;
+    if(n<0||n>=tabs.length) return;
+    e.preventDefault(); tabs[n].focus(); show(tabs[n].dataset.p);});});
+
+/* ---------- the trading calendar (example, and it says so) ---------- */
+(function(){
+  var days=[0,0,0.18,-0.31,0,0.42,0, 0,-0.12,0.55,0,0,0.09,-0.88,
+            0,0,0.24,0.31,-0.15,0,0, 0.62,0,-0.44,0,0.13,0,0, 0,0.27];
+  var h='',traded=0,green=0,best=0,month=0;
+  for(var i=0;i<2;i++) h+='<div class="day off"></div>';
+  days.forEach(function(v,i){
+    var cls=v>0?'up':v<0?'dn':'flat';
+    if(v!==0){traded++;month+=v;if(v>0){green++;best=Math.max(best,v)}}
+    h+='<div class="day '+cls+'" style="animation-delay:'+(i*13)+'ms" title="Day '+(i+1)+' · '
+      +(v?(v>0?'+':'')+v.toFixed(2)+' ETH closed':'no trades closed')+'">'
+      +'<span>'+(i+1)+'</span><span class="pl">'+(v?(v>0?'+':'')+v.toFixed(2):'·')+'</span></div>';});
+  $('cal').innerHTML=h;
+  $('cD').textContent=traded; $('cG').textContent=green+' / '+traded;
+  $('cB').textContent='+'+best.toFixed(2);
+  var m=$('cM'); m.textContent=(month>0?'+':'')+month.toFixed(2);
+  m.style.color=month>=0?'var(--lime)':'var(--red)';
+})();
+
+$('addrGo').addEventListener('click',function(){
+  var v=$('addr').value.trim();
+  $('addrOut').textContent=/^0x[a-fA-F0-9]{40}$/.test(v)
+    ? 'Well-formed address. The browser-side reader is stage 6 and is not wired into this page yet — nothing was sent anywhere.'
+    : 'That does not look like an address: 0x followed by 40 hex characters.';
+});
+</script>
+</body>
+</html>
