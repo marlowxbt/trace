@@ -20,6 +20,12 @@ User=trace
 Group=trace
 WorkingDirectory=/opt/trace/app
 
+# Python block-buffers stdout when it is not a terminal, and under systemd
+# it never is - so every poll line sat in an 8KB buffer while the journal
+# showed nothing and the collector looked hung. It was not: only the
+# stderr lines were getting through, which is exactly the misleading half.
+Environment=PYTHONUNBUFFERED=1
+
 ExecStart=/opt/trace/venv/bin/python -m trace.serve \
     --config /opt/trace/config.toml \
     --host 127.0.0.1 --port 8080
