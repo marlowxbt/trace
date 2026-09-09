@@ -89,11 +89,20 @@ nav a:hover{color:var(--txt);border-bottom-color:var(--lime)}
 .rhead .rstate{margin-left:auto}
 .rhead .illus{border:1px solid rgba(219,253,82,.3);border-radius:100px;padding:2px 8px;
   color:var(--lime);font-size:9px;letter-spacing:.1em}
-.rfeed{padding:9px 10px;min-height:342px;display:flex;flex-direction:column;gap:8px;
+.rfeed{padding:9px 10px;height:342px;display:flex;flex-direction:column;gap:8px;
   justify-content:flex-end;overflow:hidden}
 .post{border:1px solid var(--rule);border-radius:10px;background:var(--sunk);padding:10px 12px;
-  animation:slidein .4s cubic-bezier(.2,.7,.3,1);flex:0 0 auto;min-width:0}
-@keyframes slidein{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  flex:0 0 auto;min-width:0;overflow:hidden;
+  animation:slidein .5s cubic-bezier(.22,.68,.3,1);
+  transition:max-height .5s cubic-bezier(.4,0,.2,1),opacity .34s ease,
+             padding .5s cubic-bezier(.4,0,.2,1),margin .5s cubic-bezier(.4,0,.2,1),
+             border-color .4s ease,background .4s ease,transform .5s cubic-bezier(.4,0,.2,1)}
+@keyframes slidein{from{opacity:0;transform:translateY(14px) scale(.985)}
+                   to{opacity:1;transform:none}}
+/* leaving the top of the stack: collapse rather than disappear, so the cards
+   below rise into the gap instead of jumping into it */
+.post.out{max-height:0!important;opacity:0;padding-top:0;padding-bottom:0;
+  margin-bottom:-8px;border-top-width:0;border-bottom-width:0;transform:translateY(-8px)}
 .post.hit{border-color:rgba(219,253,82,.3);background:rgba(219,253,82,.045)}
 .post.miss{border-color:rgba(255,90,60,.28);background:rgba(255,90,60,.035)}
 .pmeta{display:flex;align-items:center;gap:9px;font-size:10.5px;color:var(--dim2);
@@ -122,12 +131,17 @@ nav a:hover{color:var(--txt);border-bottom-color:var(--lime)}
   padding:1px 9px;margin-right:9px;color:var(--dim2);letter-spacing:.08em}
 .rfoot{border-top:1px solid var(--rule);background:var(--panel2);padding:10px 14px;display:flex;
   gap:16px;flex-wrap:wrap;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--dim2);align-items:center}
+  color:var(--dim2);align-items:center;
+  transition:background .65s ease,border-top-color .65s ease}
 .rfoot b{color:var(--txt);font-weight:600;font-family:var(--disp);font-size:14px}
 .rfoot .rnote{margin-left:auto;text-transform:none;letter-spacing:.02em;font-size:10px}
 .rfoot.fire{background:rgba(255,90,60,.09);border-top-color:rgba(255,90,60,.4)}
 .rhead .live{border:1px solid var(--rule2);border-radius:100px;padding:2px 8px;font-size:9px;
-  letter-spacing:.1em;color:var(--dim)}
+  letter-spacing:.1em;color:var(--dim);transition:opacity .3s ease}
+.rhead .live.swap{opacity:0}
+.rfoot b{transition:color .45s ease}
+#rMultL{transition:opacity .3s ease}
+#rMultL.swap{opacity:0}
 .rej{display:grid;gap:9px;margin-top:6px}
 .rejrow{display:grid;grid-template-columns:27px 1fr;gap:11px;align-items:start;
   border:1px solid var(--rule);border-radius:10px;background:var(--sunk);padding:11px 13px}
@@ -169,6 +183,8 @@ a.rejrow{text-decoration:none;color:inherit}
 h1{font-family:var(--disp);font-weight:900;font-size:clamp(27px,3.5vw,50px);line-height:.98;
   letter-spacing:-.03em;margin:14px 0 0;text-transform:uppercase;text-wrap:balance}
 h1 em{font-style:normal;color:var(--lime)}
+/* three tiers, not two: the brand, the subject, and the words joining them */
+h1 i{font-style:normal;color:#8B929E}
 .sub{color:var(--dim);font-size:14.5px;margin:18px 0 0;max-width:52ch}
 .sub b{color:var(--txt);font-weight:500}
 .acts{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
@@ -288,7 +304,8 @@ tbody tr{transition:background .18s}
 tbody tr:hover{background:var(--panel2)}
 td.id{color:var(--txt)} td.r{text-align:right}
 .st{font-size:9px;letter-spacing:.13em;text-transform:uppercase;padding:2px 8px;border-radius:100px;
-  border:1px solid currentColor;display:inline-block}
+  border:1px solid currentColor;display:inline-block;
+  transition:color .45s ease,border-color .45s ease,background .45s ease}
 .st.SPIKE{color:var(--red)} .st.WARM{color:var(--lime)}
 .st.QUIET{color:var(--steel)} .st.WARMING{color:var(--dim2)}
 .mini{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;min-width:56px}
@@ -383,12 +400,12 @@ footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;disp
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-
+</head>
+<body>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div id="grid" aria-hidden="true"></div>
 <div id="veil" aria-hidden="true"></div>
-</head>
-<body>
+
 <div class="rail"><div class="in">
   <a class="mark" href="#top"><i></i>Trace</a>
   <nav>
@@ -406,7 +423,7 @@ footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;disp
   <div class="hero">
     <div>
       <div class="eyebrow">Robinhood Chain &middot; id 4663 &middot; read-only</div>
-      <h1><em>Trace</em> counts every post<br>on Robinhood Chain.</h1>
+      <h1><em>Trace</em> <i>counts every post on</i><br>Robinhood Chain.</h1>
       <p class="sub"><b>TRACE</b> is a read-only terminal for Robinhood Chain. It follows every
         memecoin coming off the factory, counts the posts about each one five minutes at a time,
         and says one word when a room gets loud — <b>before the chart moves</b>. The other half
@@ -978,17 +995,52 @@ var RGB={SPIKE:[255,90,60],WARM:[219,253,82],QUIET:[95,139,150]};
       +'</div>';
     return el;
   }
+  /* Remove from the top of the stack without the rest jumping: pin the
+     height, then let CSS collapse it. */
+  function drop(el){
+    el.style.maxHeight=el.offsetHeight+'px';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ el.classList.add('out') }); });
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el) },560);
+  }
+  function trim(){
+    var live=[].filter.call(feed.children,function(c){
+      return !c.classList.contains('out')});
+    while(live.length>3) drop(live.shift());
+  }
+
+  /* A number that changes by three should be seen changing. */
+  function count(el,to,dp,suf){
+    var from=parseFloat((el.textContent||'').replace(/[^0-9.]/g,''));
+    if(reduce||isNaN(from)||from===to){ el.textContent=to.toFixed(dp)+(suf||''); return }
+    var t0=null,dur=520;
+    requestAnimationFrame(function f(t){
+      if(!t0)t0=t;
+      var k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+      el.textContent=(from+(to-from)*e).toFixed(dp)+(suf||'');
+      if(k<1) requestAnimationFrame(f);
+    });
+  }
+  /* Text that is replaced, not counted, fades through instead of blinking. */
+  function swap(el,text){
+    if(reduce){ el.textContent=text; return }
+    el.classList.add('swap');
+    setTimeout(function(){ el.textContent=text; el.classList.remove('swap') },300);
+  }
+
   var lastW=-1;
   function setWindow(i){
     if(i===lastW) return; lastW=i;
     var w=WINS[i], st=$('rState'), foot=$('rFoot');
-    $('rWin').textContent=w.lb+' UTC';
-    st.className='rstate st '+w.s; st.textContent=w.s.toLowerCase();
-    $('rCount').textContent=w.r; $('rAcc2').textContent=w.a;
+    swap($('rWin'), w.lb+' UTC');
+    st.className='rstate st '+w.s;
+    swap(st, w.s.toLowerCase());
+    count($('rCount'), w.r, 0);
+    count($('rAcc2'), w.a, 0);
     var m=$('rMult2');
-    m.textContent=w.b?w.x.toFixed(1)+'×':'—';
-    $('rMultL').textContent=w.b?'vs normal ('+w.b.toFixed(2)+' for this age)'
-                              :'no baseline yet';
+    if(w.b) count(m, w.x, 1, '×'); else swap(m, '—');
+    swap($('rMultL'), w.b?'vs normal ('+w.b.toFixed(2)+' for this age)'
+                         :'no baseline yet');
     m.style.color=w.s==='SPIKE'?'var(--red)':w.s==='WARM'?'var(--lime)':'var(--dim)';
     foot.className='rfoot'+(w.s==='SPIKE'?' fire':'');
   }
@@ -996,23 +1048,36 @@ var RGB={SPIKE:[255,90,60],WARM:[219,253,82],QUIET:[95,139,150]};
   function step(){
     if(i>=SEQ.length){
       clearInterval(timer);
+      /* Hand over to the other run without emptying the screen: the next
+         reel's first cards push these out, the way any three consecutive
+         posts do. */
       setTimeout(function(){
-        R=D.reels[(Math.random()*D.reels.length)|0];
-        SEQ=R.seq; WINS=R.win; OURS=R.ca; SHORT=OURS.slice(0,10)+'…'+OURS.slice(-4);
-        i=0; lastW=-1; feed.innerHTML='';
-        timer=setInterval(step,1000);
-      },5000);
+        var next=D.reels[(D.reels.indexOf(R)+1)%D.reels.length];
+        R=next; SEQ=R.seq; WINS=R.win; OURS=R.ca;
+        SHORT=OURS.slice(0,10)+'…'+OURS.slice(-4);
+        i=0; lastW=-1;
+        timer=setInterval(step,1150);
+      },4200);
       return;
     }
     var p=SEQ[i++];
     setWindow(p.w);
+    trim();
     feed.appendChild(card(p));
-    while(feed.children.length>3) feed.removeChild(feed.firstChild);
   }
   if(reduce){
     SEQ.slice(-3).forEach(function(p){feed.appendChild(card(p))});
     setWindow(SEQ[SEQ.length-1].w);
-  } else { setWindow(0); timer=setInterval(step,1000); step(); }
+  } else {
+    /* Three cards before the first tick, so the card never opens on an empty
+       panel with the stack hanging off the bottom edge. */
+    lastW=-1; setWindow(SEQ[0].w);
+    for(i=0;i<3&&i<SEQ.length;i++){
+      var c=card(SEQ[i]); c.style.animation='none'; feed.appendChild(c);
+    }
+    setWindow(SEQ[Math.min(2,SEQ.length-1)].w);
+    timer=setInterval(step,1150);
+  }
 })();
 
 /* ---------- who keeps showing up ----------
