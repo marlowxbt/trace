@@ -1,0 +1,32 @@
+# A daily copy of the database, kept for a week.
+#
+# The collector's database is the only thing on this machine that cannot be
+# rebuilt: every post in it was paid for once and the feed will not sell the
+# same history back cheaply. sqlite3 .backup is used rather than cp because
+# the collector is writing while this runs, and a copied file mid-write is a
+# corrupt file.
+
+[Unit]
+Description=TRACE - back up the collector's database
+Documentation=https://github.com/marlowxbt/trace
+
+[Service]
+Type=oneshot
+User=trace
+Group=trace
+ExecStart=/bin/bash -c '\
+  set -eu; \
+  d=/opt/trace/data/backups; mkdir -p "$d"; \
+  /usr/bin/sqlite3 /opt/trace/data/trace.db ".backup $d/trace-$(date -u +%%Y%%m%%d).db"; \
+  /usr/bin/gzip -f "$d/trace-$(date -u +%%Y%%m%%d).db"; \
+  ls -1t "$d"/*.gz | tail -n +8 | xargs -r rm --'
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/trace/data
+SyslogIdentifier=trace-backup
+
+[Install]
+WantedBy=multi-user.target

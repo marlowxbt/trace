@@ -700,9 +700,24 @@ def main(argv: list[str] | None = None) -> int:
 
     rows = _db.active_watchlist(conn)
     if not rows and not args.check:
-        print("watchlist is empty - run python -m trace.watchlist, or pass "
-              "--tokens 0xaddr:SYMBOL", file=sys.stderr)
-        return 1
+        # On a server the collector starts before anything has ever run stage
+        # 1, and exiting here put systemd in a restart loop: start, print this,
+        # die, wait twenty seconds, repeat. If it is going to refresh the
+        # watchlist every quarter of an hour anyway it can do the first one
+        # now. Discovery reads the chain and costs nothing.
+        if args.refresh_min:
+            print("watchlist is empty - running discovery first", file=sys.stderr)
+            try:
+                from . import watchlist as _wl
+                from .rpc import Rpc
+                _wl.refresh(cfg, conn, Rpc(cfg.chain.rpc_url, cfg.chain.timeout_s))
+                rows = _db.active_watchlist(conn)
+            except Exception as e:
+                print(f"  discovery failed ({type(e).__name__}: {e})", file=sys.stderr)
+        if not rows:
+            print("watchlist is empty - run python -m trace.watchlist, or pass "
+                  "--tokens 0xaddr:SYMBOL", file=sys.stderr)
+            return 1
     amb = ambiguous_symbols(rows)
 
     if args.cohort:

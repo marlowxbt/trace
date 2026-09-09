@@ -1,0 +1,49 @@
+# The desk, as a service.
+#
+# It binds loopback and only loopback. There is no login on this page because
+# there is nothing to log in to: it reads one sqlite file and serves it to
+# whoever is already on the machine. Reach it from your laptop with
+#
+#   ssh -N -L 8080:127.0.0.1:8080 trace@<server>
+#
+# and open http://127.0.0.1:8080. Nothing is exposed to the internet.
+
+[Unit]
+Description=TRACE desk - the live terminal over the collector's database
+Documentation=https://github.com/marlowxbt/trace
+After=network-online.target
+
+[Service]
+Type=simple
+User=trace
+Group=trace
+WorkingDirectory=/opt/trace/app
+
+ExecStart=/opt/trace/venv/bin/python -m trace.serve \
+    --config /opt/trace/config.toml \
+    --host 127.0.0.1 --port 8080
+
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
+
+# The desk never writes and never calls out. It does not even get the key.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadOnlyPaths=/opt/trace/data
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+MemoryMax=256M
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=trace-desk
+
+[Install]
+WantedBy=multi-user.target

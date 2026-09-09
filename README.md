@@ -8,7 +8,8 @@
 <a href="https://trace-terminal.com">trace-terminal.com</a> &middot;
 <a href="docs/ATTENTION.md">the finding</a> &middot;
 <a href="docs/DETECTOR.md">how it decides</a> &middot;
-<a href="docs/SAFETY.md">what it refuses to do</a>
+<a href="docs/SAFETY.md">what it refuses to do</a> &middot;
+<a href="docs/DEPLOY.md">put it on a server</a>
 </p>
 
 <p align="center">
@@ -121,6 +122,7 @@ shadows the standard library's `trace` module while you are inside it.
 | `python -m trace.callers` | who keeps showing up, and how early |
 | `python -m trace.export --with-posts` | a public JSON snapshot |
 | `python -m trace.serve` | the live desk on `127.0.0.1:8080` |
+| `sudo bash deploy/install.sh` | the whole thing on a server, as systemd services — see [DEPLOY](docs/DEPLOY.md) |
 | `make test` | 162 offline tests, no network, no key, no cost |
 
 ---

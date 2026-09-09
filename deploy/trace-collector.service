@@ -1,0 +1,58 @@
+# The collector, as a service.
+#
+# It runs as its own unprivileged user, can write to exactly one directory,
+# and reads the X key from a file only root can open. Nothing here needs a
+# wallet, a private key, or a port - the collector only makes outbound calls.
+#
+#   sudo cp deploy/*.service /etc/systemd/system/
+#   sudo systemctl enable --now trace-collector
+
+[Unit]
+Description=TRACE collector - polls the feed once per window per token
+Documentation=https://github.com/marlowxbt/trace
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trace
+Group=trace
+WorkingDirectory=/opt/trace/app
+
+# The key lives here and nowhere else: root-owned, mode 0600, never in the
+# repository and never in a command line where `ps` would show it.
+EnvironmentFile=/etc/trace.env
+
+ExecStart=/opt/trace/venv/bin/python -m trace.collector \
+    --config /opt/trace/config.toml \
+    --refresh-min 15
+
+# A collector that dies at 3am and stays dead is a collector that quietly
+# stops costing money and quietly stops being right.
+Restart=always
+RestartSec=20
+StartLimitIntervalSec=0
+
+# It writes one sqlite file. Everything else on the disk is off limits.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ReadWritePaths=/opt/trace/data
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+MemoryMax=512M
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=trace-collector
+
+[Install]
+WantedBy=multi-user.target

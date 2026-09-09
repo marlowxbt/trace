@@ -1,0 +1,10 @@
+[Unit]
+Description=TRACE - daily database backup
+
+[Timer]
+OnCalendar=*-*-* 03:17:00 UTC
+Persistent=true
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target
