@@ -382,6 +382,35 @@ td.id{color:var(--txt)} td.r{text-align:right}
 .stage .i{color:var(--dim2);font-size:11px}
 .stage .s{text-align:right;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase}
 .stage .s.d{color:var(--lime)} .stage .s.o{color:var(--dim2)}
+/* roadmap */
+.rmhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.rmhead b{font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase}
+.rmhead span{margin-left:auto;font-size:10.5px;color:var(--dim2)}
+.phase{margin-bottom:22px;opacity:0;transform:translateY(10px);
+  transition:opacity .5s ease-out,transform .5s ease-out}
+.phase.in{opacity:1;transform:none}
+.ph{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+.ph .nm{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--txt)}
+.ph .sub{font-size:10.5px;color:var(--dim2)}
+.ph .cnt{margin-left:auto;font-size:10.5px;color:var(--dim2);
+  font-variant-numeric:tabular-nums}
+.phbar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;margin-bottom:11px}
+.phbar i{display:block;height:100%;width:0;border-radius:2px;
+  transition:width 1s cubic-bezier(.2,.7,.3,1) .2s}
+.rrow{display:grid;grid-template-columns:16px 1fr auto;gap:11px;align-items:baseline;
+  padding:7px 0;border-bottom:1px solid var(--rule)}
+.rrow:last-child{border-bottom:0}
+.rrow .dot{width:6px;height:6px;border-radius:50%;margin-top:5px;background:var(--rule2)}
+.rrow.live .dot{background:var(--lime);box-shadow:0 0 8px rgba(219,253,82,.55)}
+.rrow.build .dot{background:var(--steel)}
+.rrow .t{font-size:12.5px;color:var(--txt)}
+.rrow .d{display:block;font-size:11px;color:var(--dim2);line-height:1.4;margin-top:1px}
+.rrow .s{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2);
+  white-space:nowrap}
+.rrow.live .s{color:var(--lime)}
+.rrow.build .s{color:var(--steel)}
+
 footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;display:flex;gap:24px;
   flex-wrap:wrap;font-size:11px;color:var(--dim2)}
 
@@ -752,16 +781,11 @@ footer{margin-top:56px;border-top:1px solid var(--rule);padding:24px 0 60px;disp
             could broadcast a transaction — a list in the code, not a promise in a document.</span></div></div>
       </div>
       <div>
-        <div class="stage"><span class="i">01</span><span>Watchlist</span><span class="s d">done</span></div>
-        <div class="stage"><span class="i">02</span><span>Collector</span><span class="s d">done</span></div>
-        <div class="stage"><span class="i">03</span><span>Detector</span><span class="s d">done</span></div>
-        <div class="stage"><span class="i">04</span><span>Public snapshot</span><span class="s d">done</span></div>
-        <div class="stage"><span class="i">05</span><span>Attention front end</span><span class="s o">open</span></div>
-        <div class="stage"><span class="i">06</span><span>Wallet front end</span><span class="s o">started</span></div>
-        <div class="stage"><span class="i">07</span><span>The mirror</span><span class="s o">open</span></div>
-        <div class="stage"><span class="i">08</span><span>Money behind it</span><span class="s o">started</span></div>
-        <p class="note" style="margin-top:16px">Open source, MIT. Run the collector on your own key
-          and check every number on this page for yourself.</p>
+        <div class="rmhead"><b>Roadmap</b>
+          <span>no dates &mdash; a date is a promise about other people&rsquo;s time</span></div>
+        <div id="roadmap"></div>
+        <p class="note" style="margin-top:16px">Open source, MIT. Every row marked <b>live</b> runs
+          today from a clone, on your own key.</p>
       </div>
     </div>
   </section>
@@ -1170,6 +1194,63 @@ var RGB={SPIKE:[255,90,60],WARM:[219,253,82],QUIET:[95,139,150]};
     var io=new IntersectionObserver(function(es){
       es.forEach(function(e){ if(e.isIntersecting){ arrive(); io.disconnect(); } });
     },{threshold:.2});
+    io.observe(box);
+  } else arrive();
+})();
+
+/* ---------- the roadmap ----------
+   Three phases, and the bar is drawn from the same counts as the rows, so the
+   picture cannot say something the list does not. No dates: a date on a
+   roadmap is a promise about other people's time. */
+(function(){
+  var box=$('roadmap'); if(!box) return;
+  var PHASES=[
+    {nm:'Live', sub:'runs today from a clone', cls:'live', st:'live', c:'var(--lime)',
+     rows:[
+      ['The watchlist','reads the Pons v2 factory and keeps the ten getting real traction'],
+      ['The collector','one poll per five-minute window, per token, on any paid feed'],
+      ['The detector','quiet / warm / spike against normal for a token that age'],
+      ['The caller list','who keeps showing up and how early &mdash; computed, never curated'],
+      ['The desk','a live terminal over the collector&rsquo;s own database, on your machine']]},
+    {nm:'In build', sub:'started, not finished', cls:'build', st:'building', c:'var(--steel)',
+     rows:[
+      ['The hosted desk','the same terminal here, not only on localhost'],
+      ['Your book','what you put in and took out, priced, as a calendar'],
+      ['Money behind it','what the accounts talking actually hold, beside the count']]},
+    {nm:'Designed', sub:'specified, not started', cls:'', st:'next', c:'var(--rule2)',
+     rows:[
+      ['The mirror','the multiple you entered at, against where the room already was'],
+      ['A second day','the by-age curve is one day and ten tokens. It wants a month']]}
+  ];
+  var h='';
+  PHASES.forEach(function(p){
+    var done=p.cls==='live'?p.rows.length:0;
+    h+='<div class="phase"><div class="ph"><span class="nm">'+p.nm+'</span>'
+      +'<span class="sub">'+p.sub+'</span>'
+      +'<span class="cnt">'+p.rows.length+(p.cls==='live'?' shipped':' planned')+'</span></div>'
+      +'<div class="phbar"><i data-w="'+(p.cls==='live'?100:p.cls==='build'?38:0)
+      +'" style="background:'+p.c+'"></i></div>';
+    p.rows.forEach(function(r){
+      h+='<div class="rrow '+p.cls+'"><span class="dot"></span>'
+        +'<span><span class="t">'+r[0]+'</span><span class="d">'+r[1]+'</span></span>'
+        +'<span class="s">'+p.st+'</span></div>';
+    });
+    h+='</div>';
+  });
+  box.innerHTML=h;
+
+  function arrive(){
+    [].forEach.call(box.querySelectorAll('.phase'),function(el,i){
+      if(reduce){el.classList.add('in');return}
+      setTimeout(function(){el.classList.add('in')},150*i);});
+    [].forEach.call(box.querySelectorAll('.phbar i'),function(b,i){
+      if(reduce){b.style.width=b.dataset.w+'%';return}
+      setTimeout(function(){b.style.width=b.dataset.w+'%'},150*i+180);});
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ arrive(); io.disconnect(); } });
+    },{threshold:.15});
     io.observe(box);
   } else arrive();
 })();
