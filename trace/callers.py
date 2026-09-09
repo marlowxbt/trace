@@ -40,6 +40,21 @@ LED_RANK = 3                # "among the first three voices" on a token
 EARLY_MIN = 5               # a first post inside this many minutes is a first voice
 
 
+def why(row: dict) -> str:
+    """One line saying what put this account on the list.
+
+    A mark a reader cannot interrogate is decoration. Every clause here is a
+    count taken from the same table the verdict came from, so the sentence and
+    the row cannot drift apart.
+    """
+    bits = ["on %d tokens" % row["covered"]]
+    if row["led"]:
+        bits.append("first voice on %d" % row["led"])
+    if row["first_at"] is not None:
+        bits.append("earliest +%dm" % row["first_at"])
+    return " \u00b7 ".join(bits)
+
+
 def build(conn) -> list[dict]:
     tok = {r["address"].lower(): (r["symbol"], r["launch_ts"])
            for r in conn.execute("SELECT address, symbol, launch_ts FROM tokens")}
@@ -89,10 +104,33 @@ def build(conn) -> list[dict]:
             "listed": len(v["toks"]) >= LISTED_MIN_TOKENS,
             "early": bool(ages) and ages[0] <= EARLY_MIN,
         })
+        out[-1]["why"] = why(out[-1])
     # repeat callers first, then whoever led most, then whoever arrives earliest
     out.sort(key=lambda a: (-a["covered"], -a["led"],
                             a["first_at"] if a["first_at"] is not None else 10 ** 6))
     return out
+
+
+RULES = {
+    "min_tokens": LISTED_MIN_TOKENS,
+    "led_rank": LED_RANK,
+    "early_min": EARLY_MIN,
+    "sentence": ("An account is on the list once it has posted a counted post "
+                 "about %d different watched tokens. Nothing else puts it there: "
+                 "no follower count, no engagement, no submission, no payment. "
+                 "Being on it marks a row and changes no verdict."
+                 % LISTED_MIN_TOKENS),
+}
+
+
+def index(rows: list[dict]) -> dict:
+    """handle -> the listed row, for a page that paints by author.
+
+    Only listed accounts are in here. The caller list is a layer over the feed,
+    never part of a post: the post record the page renders is the same object
+    whether or not this map has a key for it.
+    """
+    return {r["handle"]: r for r in rows if r["listed"]}
 
 
 def main(argv=None) -> int:
@@ -107,6 +145,12 @@ def main(argv=None) -> int:
     rows = build(conn)
     if args.json:
         print(json.dumps(rows))
+        return 0
+
+    if not rows:
+        print("No counted posts in %s yet, so nobody is on the list.\n"
+              "Run the collector for a while first:\n"
+              "    python3 -m trace.collector" % _config.load(args.config).db_file)
         return 0
 
     listed = [r for r in rows if r["listed"]]

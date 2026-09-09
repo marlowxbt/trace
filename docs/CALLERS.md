@@ -81,16 +81,44 @@ account announcing its own launch. Also worth seeing, also not a signal.
 
 ---
 
+## Where you see it
+
+On the desk (`python -m trace.serve`), in two places and only two:
+
+* **A red left edge and a red handle** on any post whose author is on the list,
+  with a `N tokens` chip beside the name. Hovering the row gives the sentence
+  that put them there. An `on the list` filter narrows the feed to those posts.
+* **A panel of its own** down the right-hand side: handle, avatar, how many
+  watched tokens, how often they were a first voice, how early they arrive, and
+  the rule itself printed above the list in full.
+
+The list travels beside the posts in `/api/live.json`, never inside them:
+
+```jsonc
+{
+  "posts":   [ /* unchanged, with no idea the list exists */ ],
+  "callers": [ /* the list */ ],
+  "caller_rules": { "min_tokens": 2, "sentence": "..." }
+}
+```
+
+That shape is the claim made structural. A post object is byte-identical
+whether or not its author is listed, so the mark can only ever be paint.
+
+---
+
 ## What the mark does not do
 
 Nothing. This is the constraint the whole feature hangs on.
 
 `detector.evaluate` takes counts, `authors`, and two list fields, and passes the
-list fields **straight through without reading them**. A test replays two
-recorded hours twice — once with an empty list, once with a list matching every
-single author — and asserts every state and every multiplier is identical.
+list fields **straight through without reading them**. `tests/test_callers.py`
+replays two recorded hours twice — once with an empty list, once with a list
+matching every single author — and asserts every state, every baseline and every
+multiplier is identical. A second test reads the detector's own source and
+asserts the word `callers` does not appear in it.
 
-If that test ever fails, the feature is wrong, not the test.
+If those tests ever fail, the feature is wrong, not the test.
 
 The reason is simple: the moment a name on a list can move a verdict, the list
 becomes worth money, and a list worth money is a list somebody is selling. The

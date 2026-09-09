@@ -35,6 +35,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote, urlparse
 
+from . import callers as _callers
 from . import config as _config
 from . import db as _db
 from . import export as _export
@@ -103,6 +104,11 @@ def live(conn: sqlite3.Connection, cfg) -> dict:
     data = _export.snapshot(conn, cfg)
     data["posts"] = recent_posts(conn)
     data["health"] = health(conn, cfg.detector.rate_window_min * 60)
+    # The caller list travels beside the posts, never inside them. A post is the
+    # same object whether or not its author is on the list, which is the whole
+    # claim: the list is a layer the page paints, not an input to anything.
+    data["callers"] = _callers.build(conn)
+    data["caller_rules"] = _callers.RULES
     return data
 
 
@@ -159,12 +165,15 @@ def main(argv=None) -> int:
     conn = _db.connect(cfg.db_file)
     h = health(conn, cfg.detector.rate_window_min * 60)
     n = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+    cal = _callers.build(conn)
     conn.close()
 
     srv = ThreadingHTTPServer((args.host, args.port), Desk)
     srv.cfg = cfg
     print("TRACE desk  http://%s:%d" % (args.host, args.port), file=sys.stderr)
     print("  database %s - %d posts held" % (cfg.db_file, n), file=sys.stderr)
+    print("  callers  %d on the list of %d counted accounts"
+          % (sum(1 for c in cal if c["listed"]), len(cal)), file=sys.stderr)
     print("  collector %s" % ("running" if h["running"] else
                               "NOT running - start it in another terminal:\n"
                               "      python3 -m trace.collector"), file=sys.stderr)

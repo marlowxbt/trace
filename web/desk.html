@@ -44,9 +44,12 @@ a{color:inherit;text-decoration:none}
 .rail .right{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 
 /* layout */
-.desk{display:grid;grid-template-columns:352px 1fr;gap:0;min-height:calc(100vh - 47px)}
+.desk{display:grid;grid-template-columns:340px minmax(0,1fr) 316px;gap:0;
+  min-height:calc(100vh - 47px)}
 .side{border-right:1px solid var(--rule);padding:16px 16px 40px;background:var(--panel)}
 .main{padding:16px 18px 60px;min-width:0}
+.list{border-left:1px solid var(--rule);padding:16px 16px 40px;background:var(--panel);
+  align-self:start;position:sticky;top:47px;max-height:calc(100vh - 47px);overflow:auto}
 h2{font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--dim2);margin:0 0 11px;display:flex;gap:10px;
   align-items:baseline}
@@ -73,6 +76,25 @@ h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:
 .bar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;border-radius:2px;transition:width .7s ease-out}
 
+/* the caller list */
+.crule{color:var(--dim2);font-size:10.5px;line-height:1.5;margin:0 0 11px;
+  border-left:2px solid var(--rule2);padding-left:10px}
+.cal{display:grid;grid-template-columns:24px 1fr auto;gap:9px;align-items:start;
+  padding:7px 9px;border-radius:9px;border:1px solid var(--rule);
+  border-left:2px solid var(--red);background:var(--sunk);margin-bottom:6px}
+.cal .cav{width:24px;height:24px;border-radius:50%;object-fit:cover;margin-top:1px;
+  border:1px solid var(--rule2);background:var(--panel2)}
+.cal .cav.mono{display:grid;place-items:center;font-size:9px;font-weight:600;
+  color:var(--dim2)}
+.cal .cwho{min-width:0;line-height:1.35}
+.cal .ch{display:block;color:var(--red);font-size:11.5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.cal .cy{display:block;color:var(--dim2);font-size:10px;line-height:1.45}
+.cal .cn{color:var(--txt);font-size:13px;font-variant-numeric:tabular-nums;
+  text-align:right;line-height:1.2}
+.cal .cn s{color:var(--dim2);font-size:8.5px;text-decoration:none;letter-spacing:.11em;
+  text-transform:uppercase;display:block}
+
 /* filters */
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
 .f{border:1px solid var(--rule2);border-radius:100px;padding:5px 13px;font-size:10.5px;
@@ -85,6 +107,15 @@ h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:
   padding:12px 14px;margin-bottom:8px}
 .post.hit{border-color:rgba(219,253,82,.28);background:rgba(219,253,82,.04)}
 .post.miss{border-color:rgba(255,90,60,.24);background:rgba(255,90,60,.03)}
+/* On the list: a red edge on the row and a red handle, and that is the whole
+   effect. The verdict below the post is computed without ever consulting it. */
+.post.listed{border-left:3px solid var(--red);
+  box-shadow:inset 14px 0 22px -18px rgba(255,90,60,.85)}
+.post.listed .hd{color:var(--red)}
+.post.listed .nm{color:var(--txt)}
+.lchip{border:1px solid rgba(255,90,60,.5);color:var(--red);border-radius:100px;
+  padding:1px 7px;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+  margin-left:8px;white-space:nowrap;flex:0 0 auto}
 .post.fresh{animation:land .55s cubic-bezier(.2,.7,.3,1)}
 @keyframes land{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .pmeta{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-width:0}
@@ -119,6 +150,13 @@ h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:
   border-radius:5px;padding:2px 7px}
 .foot{border-top:1px solid var(--rule);margin-top:26px;padding-top:14px;color:var(--dim2);
   font-size:10.5px;display:flex;gap:18px;flex-wrap:wrap}
+@media (max-width:1240px){
+  .desk{grid-template-columns:340px minmax(0,1fr)}
+  .list{grid-column:1/-1;border-left:0;border-top:1px solid var(--rule);
+    position:static;max-height:none;overflow:visible}
+  #callers{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+  .cal{margin-bottom:0}
+}
 @media (max-width:900px){
   .desk{grid-template-columns:1fr}
   .side{border-right:0;border-bottom:1px solid var(--rule)}
@@ -143,6 +181,7 @@ h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:
   <aside class="side">
     <h2>Watchlist <span id="wCount"></span></h2>
     <div id="toks"></div>
+
     <div class="foot">
       <span>window 300s</span><span>spike = 3&times; &amp; 5 posts</span><span>read-only</span>
     </div>
@@ -155,9 +194,16 @@ h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:
       <button class="f" data-f="all" aria-pressed="true">everything</button>
       <button class="f" data-f="hit" aria-pressed="false">counted</button>
       <button class="f" data-f="miss" aria-pressed="false">refused</button>
+      <button class="f" data-f="listed" aria-pressed="false">on the list</button>
     </div>
     <div id="feed"><div class="empty">reading the database&hellip;</div></div>
   </main>
+
+  <aside class="list">
+    <h2>On the list <span id="cCount"></span></h2>
+    <p class="crule" id="cRule"></p>
+    <div id="callers"></div>
+  </aside>
 </div>
 
 <script>
@@ -171,6 +217,7 @@ var first = true;
 var filter = 'all';
 var DATA = null;
 var nextAt = 0;
+var LISTED = Object.create(null);   // handle -> the caller row, painted on top
 
 function esc(t){ return String(t == null ? '' : t)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
@@ -211,8 +258,13 @@ function mono(h){
 
 function postCard(p, fresh){
   var el = document.createElement('a');
-  el.className = 'post ' + (p.matched ? 'hit' : 'miss') + (fresh ? ' fresh' : '');
+  var cal = p.author ? LISTED[p.author] : null;
+  el.className = 'post ' + (p.matched ? 'hit' : 'miss') + (fresh ? ' fresh' : '') +
+    (cal ? ' listed' : '');
   el.dataset.k = p.matched ? 'hit' : 'miss';
+  el.dataset.listed = cal ? '1' : '0';
+  if (cal) el.title = '@' + p.author + ' \u2014 ' + cal.why +
+    '. This marks the row and nothing else.';
   if (p.url) { el.href = p.url; el.target = '_blank'; el.rel = 'noopener noreferrer' }
   var verdict = p.matched
     ? '✓ counted · ' + (p.matched === 'address' ? 'carries the contract'
@@ -222,6 +274,7 @@ function postCard(p, fresh){
     '<div class="pmeta">' + avatar(p) +
       '<span class="who"><span class="nm">' + esc(p.name || p.author) + '</span>' +
       '<span class="hd">@' + esc(p.author) + '</span></span>' +
+      (cal ? '<span class="lchip">' + cal.covered + ' tokens</span>' : '') +
       '<span class="t">' + ago(p.created_at) + '<br>' +
         '+' + p.age_min + 'm after launch</span></div>' +
     '<div class="ptxt">' + mark(p.text, p.address) + '</div>' +
@@ -261,11 +314,61 @@ function drawTokens(d){
   $('wCount').textContent = toks.length + ' tokens';
 }
 
+/* Who keeps showing up. Computed from the same posts the feed is drawing, so
+   there is nothing to curate and nothing to sell: an account is here because it
+   turned up on more than one watched token, and for no other reason. */
+function drawCallers(d){
+  var all = d.callers || [];
+  var rows = all.filter(function(c){ return c.listed });
+  LISTED = Object.create(null);
+  rows.forEach(function(c){ LISTED[c.handle] = c });
+
+  $('cCount').textContent = rows.length + ' of ' + all.length + ' counted';
+  $('cRule').textContent = (d.caller_rules && d.caller_rules.sentence) || '';
+
+  var box = $('callers');
+  box.innerHTML = '';
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty" style="padding:18px;font-size:11.5px">' +
+      (all.length ? 'Nobody has turned up on two watched tokens yet.'
+                  : 'No counted posts yet \u2014 the list builds itself as they arrive.') +
+      '</div>';
+    return;
+  }
+  rows.forEach(function(c){
+    var el = document.createElement('a');
+    el.className = 'cal';
+    el.href = 'https://x.com/' + encodeURIComponent(c.handle);
+    el.target = '_blank'; el.rel = 'noopener noreferrer';
+    el.title = c.tokens.join(', ');
+    var av = c.avatar
+      ? '<img class="cav" src="' + esc(c.avatar) + '" alt="">'
+      : '<span class="cav mono">' + esc(c.handle.slice(0,2).toUpperCase()) + '</span>';
+    // the token count is the number on the right, so the line under the
+    // handle carries only what the number cannot: how early, and how often
+    // this account was one of the first voices on a launch.
+    var bits = [];
+    if (c.led) bits.push('first voice on ' + c.led);
+    if (c.first_at !== null) bits.push('earliest +' + c.first_at + 'm');
+    if (c.median_at !== null) bits.push('usually +' + c.median_at + 'm');
+    el.innerHTML = av +
+      '<span class="cwho"><b class="ch">@' + esc(c.handle) + '</b>' +
+      '<span class="cy">' + esc(bits.join(' \u00b7 ') || (c.posts + ' counted posts')) +
+      '</span></span>' +
+      '<span class="cn n">' + c.covered +
+      '<s>token' + (c.covered === 1 ? '' : 's') + '</s></span>';
+    box.appendChild(el);
+  });
+}
+
+function keep(p){
+  if (filter === 'listed') return !!(p.author && LISTED[p.author]);
+  return filter === 'all' || (filter === 'hit') === !!p.matched;
+}
+
 function drawFeed(d){
   var box = $('feed');
-  var rows = d.posts.filter(function(p){
-    return filter === 'all' || (filter === 'hit') === !!p.matched;
-  });
+  var rows = d.posts.filter(keep);
   box.innerHTML = '';
   if (!rows.length) {
     box.innerHTML = '<div class="empty">nothing here yet</div>';
@@ -307,7 +410,7 @@ function drawHealth(d){
 
 function render(d){
   DATA = d;
-  drawHealth(d); drawTokens(d); drawFeed(d);
+  drawHealth(d); drawTokens(d); drawCallers(d); drawFeed(d);
   first = false;
 }
 
@@ -338,8 +441,7 @@ setInterval(function(){
   var left = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
   $('cNext').innerHTML = 'refresh in <b>' + left + 's</b>';
   if (DATA) [].forEach.call(document.querySelectorAll('.post .t'), function(el, i){
-    var p = DATA.posts.filter(function(q){
-      return filter === 'all' || (filter === 'hit') === !!q.matched })[i];
+    var p = DATA.posts.filter(keep)[i];
     if (p) el.innerHTML = ago(p.created_at) + '<br>+' + p.age_min + 'm after launch';
   });
 }, 1000);
