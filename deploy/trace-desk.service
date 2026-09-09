@@ -12,6 +12,7 @@
 Description=TRACE desk - the live terminal over the collector's database
 Documentation=https://github.com/marlowxbt/trace
 After=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -25,7 +26,6 @@ ExecStart=/opt/trace/venv/bin/python -m trace.serve \
 
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=0
 
 # The desk never writes and never calls out. It does not even get the key.
 NoNewPrivileges=yes

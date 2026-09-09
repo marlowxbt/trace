@@ -12,6 +12,7 @@ Description=TRACE collector - polls the feed once per window per token
 Documentation=https://github.com/marlowxbt/trace
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -31,7 +32,6 @@ ExecStart=/opt/trace/venv/bin/python -m trace.collector \
 # stops costing money and quietly stops being right.
 Restart=always
 RestartSec=20
-StartLimitIntervalSec=0
 
 # It writes one sqlite file. Everything else on the disk is off limits.
 NoNewPrivileges=yes
