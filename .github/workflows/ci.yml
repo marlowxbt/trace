@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: tests · python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: install
+        run: pip install -r requirements.txt
+      - name: tests
+        # Every network call goes through a transport function, so the whole
+        # collector runs here offline, with no key and at no cost.
+        run: python -m unittest discover -s tests -t . -v
+
+  guard:
+    name: no signer, no broadcast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: constraint 1 still holds
+        run: python scripts/no_signer.py
+
+  config:
+    name: config matches the published rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: example config parses and agrees with the detector
+        # The numbers in README.md and docs/DETECTOR.md are published on a
+        # website. A collector running a rule the tests never checked is worse
+        # than no collector.
+        run: |
+          cp config.example.toml config.toml
+          python -m unittest tests.test_detector -v

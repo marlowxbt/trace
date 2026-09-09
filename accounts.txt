@@ -1,0 +1,33 @@
+# TRACE — the list
+#
+# Accounts whose posts get marked in the feed. When one of them appears in a
+# window, the row carries a red edge and the handle. That is all it does.
+#
+# It NEVER changes a verdict. The state, the multiplier and the floor are
+# computed from post counts alone and know nothing about this file. A token
+# does not spike because a listed account posted, and a token does not fail to
+# spike because none did. The mark is information sitting next to the number,
+# not a thumb on it. If this file ever gated a call, TRACE would be a follow
+# list wearing a detector's clothes, and follow lists can only tell you about
+# tokens someone you already read has already found.
+#
+# FORMAT
+#   one handle per line, no @, lowercase
+#   everything after # is a note and is ignored by the parser
+#   blank lines are ignored
+#
+# HOW TO ADD SOMEONE
+#   Open a pull request against this file. One account per pull request, and
+#   the note must say what they called and when, with a link. "Good analysis"
+#   is not a reason. "Posted $X at 40k, curve graduated 90 minutes later" is.
+#
+# HOW SOMEONE COMES OFF
+#   Open a pull request removing the line, with the same standard of evidence.
+#   Nobody is on here permanently and nobody paid to be here. There is no paid
+#   placement on this list and there never will be — the moment a line can be
+#   bought, every other line is worthless.
+#
+# The file ships empty on purpose. Seeding it with names we guessed at would
+# be the same mistake as buying the followers: it would look like signal on
+# day one and mean nothing by week two. It fills up by pull request or it
+# stays empty, and an empty list is an honest one.

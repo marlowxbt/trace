@@ -1,0 +1,36 @@
+# secrets and local settings
+config.toml
+.env
+
+# the collector's own database - it holds posts somebody paid for,
+# and it is nobody else's to have
+*.db
+*.db-wal
+*.db-shm
+
+# generated snapshots; regenerate with `make export`
+web/public.json
+web/avatars.json
+
+# python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/
+
+# fuse mount artefacts
+.fuse_hidden*
+
+# scratch
+_to_delete/
+
+# local seed for the desk's avatars: derived data, and other people's
+# profile pictures do not belong in a public repository
+authors_seed.json
+seed_authors.py

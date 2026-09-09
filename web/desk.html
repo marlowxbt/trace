@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TRACE desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#07080A; --panel:#0B0D11; --panel2:#0E1116; --sunk:#050609;
+  --rule:#171B23; --rule2:#242A35;
+  --txt:#E9E7E0; --dim:#858C98; --dim2:#565D69;
+  --lime:#DBFD52; --red:#FF5A3C; --steel:#5F8B96;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Archivo',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--mono);
+  font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:70;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.n{font-variant-numeric:tabular-nums}
+
+/* rail */
+.rail{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--rule);
+  background:rgba(7,8,10,.9);backdrop-filter:blur(8px);
+  display:flex;align-items:center;gap:15px;padding:11px 18px;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:900;
+  font-size:15px;letter-spacing:.26em;text-transform:uppercase}
+.mark i{width:7px;height:7px;border-radius:50%;background:var(--lime);
+  box-shadow:0 0 12px var(--lime);animation:bp 2.4s infinite}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.25}}
+.mark.stale i{background:var(--red);box-shadow:0 0 12px var(--red)}
+.chip{border:1px solid var(--rule2);border-radius:100px;padding:3px 11px;white-space:nowrap;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim2)}
+.chip b{color:var(--txt);font-weight:500}
+.chip.on{border-color:rgba(219,253,82,.45);color:var(--lime)}
+.chip.bad{border-color:rgba(255,90,60,.5);color:var(--red)}
+.rail .right{margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+
+/* layout */
+.desk{display:grid;grid-template-columns:352px 1fr;gap:0;min-height:calc(100vh - 47px)}
+.side{border-right:1px solid var(--rule);padding:16px 16px 40px;background:var(--panel)}
+.main{padding:16px 18px 60px;min-width:0}
+h2{font-family:var(--disp);font-weight:800;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dim2);margin:0 0 11px;display:flex;gap:10px;
+  align-items:baseline}
+h2 span{margin-left:auto;font-family:var(--mono);font-weight:400;letter-spacing:.06em;
+  text-transform:none;font-size:10.5px}
+
+/* watchlist */
+.tok{display:block;border:1px solid var(--rule);border-radius:10px;background:var(--sunk);
+  padding:10px 12px;margin-bottom:7px;transition:border-color .18s}
+.tok:hover{border-color:var(--rule2)}
+.tok.SPIKE{border-color:rgba(255,90,60,.45);background:rgba(255,90,60,.05)}
+.tok.WARM{border-color:rgba(219,253,82,.32)}
+.tok .r1{display:flex;align-items:baseline;gap:8px}
+.tok .sym{color:var(--txt);font-weight:500;font-size:13.5px}
+.tok .ad{color:var(--dim2);font-size:10px}
+.st{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;padding:2px 8px;
+  border-radius:100px;border:1px solid currentColor;white-space:nowrap}
+.st.SPIKE{color:var(--red)} .st.WARM{color:var(--lime)}
+.st.QUIET{color:var(--steel)} .st.WARMING{color:var(--dim2)}
+.tok .st{margin-left:auto}
+.tok .r2{display:flex;gap:14px;margin-top:7px;font-size:10.5px;color:var(--dim2);
+  letter-spacing:.06em;flex-wrap:wrap}
+.tok .r2 b{color:var(--txt);font-weight:500}
+.bar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;border-radius:2px;transition:width .7s ease-out}
+
+/* filters */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
+.f{border:1px solid var(--rule2);border-radius:100px;padding:5px 13px;font-size:10.5px;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--dim2);transition:.16s}
+.f:hover{color:var(--dim)}
+.f[aria-pressed="true"]{border-color:var(--lime);color:var(--lime)}
+
+/* the feed */
+.post{border:1px solid var(--rule);border-radius:11px;background:var(--panel);
+  padding:12px 14px;margin-bottom:8px}
+.post.hit{border-color:rgba(219,253,82,.28);background:rgba(219,253,82,.04)}
+.post.miss{border-color:rgba(255,90,60,.24);background:rgba(255,90,60,.03)}
+.post.fresh{animation:land .55s cubic-bezier(.2,.7,.3,1)}
+@keyframes land{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.pmeta{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-width:0}
+.pmeta .av{width:30px;height:30px;border-radius:50%;flex:0 0 auto;object-fit:cover;
+  border:1px solid var(--rule2);background:var(--panel2)}
+.pmeta .mono{display:grid;place-items:center;color:var(--dim2);font-size:11px;font-weight:600}
+.pmeta .who{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.pmeta .nm{color:var(--txt);font-weight:500;font-size:12.5px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.pmeta .hd{color:var(--dim2);font-size:10.5px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.pmeta .t{margin-left:auto;color:var(--dim2);font-size:10.5px;flex:0 0 auto;
+  font-variant-numeric:tabular-nums;text-align:right}
+.post:hover .nm{color:var(--lime)}
+.ptxt{color:var(--dim);font-size:12.5px;line-height:1.55;white-space:pre-wrap;
+  overflow-wrap:anywhere;max-height:7.8em;overflow:hidden}
+.tk{color:var(--lime);font-weight:500}
+.tk.bad{color:var(--steel)}
+.ca{color:var(--lime);border-bottom:1px dotted rgba(219,253,82,.45);white-space:nowrap}
+.ca.bad{color:var(--red);border-bottom-color:rgba(255,90,60,.5)}
+.verdict{display:block;margin-top:9px;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--lime);overflow-wrap:anywhere}
+.verdict.off{color:var(--red);opacity:.85}
+.verdict .badge{border:1px solid var(--rule2);border-radius:100px;padding:1px 8px;
+  margin-right:8px;color:var(--dim)}
+.empty{border:1px dashed var(--rule2);border-radius:11px;padding:26px;color:var(--dim2);
+  text-align:center}
+.warn{border:1px solid rgba(255,90,60,.45);background:rgba(255,90,60,.06);border-radius:11px;
+  padding:14px 16px;margin-bottom:13px;color:var(--dim);font-size:12.5px}
+.warn b{color:var(--red);font-weight:500}
+.warn code{color:var(--txt);background:var(--sunk);border:1px solid var(--rule);
+  border-radius:5px;padding:2px 7px}
+.foot{border-top:1px solid var(--rule);margin-top:26px;padding-top:14px;color:var(--dim2);
+  font-size:10.5px;display:flex;gap:18px;flex-wrap:wrap}
+@media (max-width:900px){
+  .desk{grid-template-columns:1fr}
+  .side{border-right:0;border-bottom:1px solid var(--rule)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <span class="mark" id="mark"><i></i>Trace desk</span>
+  <span class="chip">Robinhood Chain <b>4663</b></span>
+  <span class="chip" id="cHealth">connecting</span>
+  <span class="right">
+    <span class="chip" id="cHeld"><b>&mdash;</b> posts held</span>
+    <span class="chip" id="cSpend"><b>&mdash;</b> spent</span>
+    <span class="chip on" id="cNext">refresh &mdash;</span>
+  </span>
+</div>
+
+<div class="desk">
+  <aside class="side">
+    <h2>Watchlist <span id="wCount"></span></h2>
+    <div id="toks"></div>
+    <div class="foot">
+      <span>window 300s</span><span>spike = 3&times; &amp; 5 posts</span><span>read-only</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="warn"></div>
+    <h2>Live feed <span id="fMeta"></span></h2>
+    <div class="filters" id="filters">
+      <button class="f" data-f="all" aria-pressed="true">everything</button>
+      <button class="f" data-f="hit" aria-pressed="false">counted</button>
+      <button class="f" data-f="miss" aria-pressed="false">refused</button>
+    </div>
+    <div id="feed"><div class="empty">reading the database&hellip;</div></div>
+  </main>
+</div>
+
+<script>
+/* The desk polls the collector's own database. It never talks to X: the
+   collector buys posts, this page only reads what was already bought, so
+   leaving it open all day costs nothing. */
+var POLL_MS = 15000;
+var $ = function(i){ return document.getElementById(i) };
+var seen = Object.create(null);   // post_id -> true, so "new" can be animated
+var first = true;
+var filter = 'all';
+var DATA = null;
+var nextAt = 0;
+
+function esc(t){ return String(t == null ? '' : t)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function short(a){ return a.slice(0,10) + '…' + a.slice(-4) }
+
+/* Light up exactly what the matcher acts on: our contract, anybody else's
+   contract, and the cashtag. Nothing else is interpreted. */
+function mark(text, ours){
+  var t = esc(text);
+  t = t.replace(new RegExp(ours, 'gi'), '<span class="ca">' + short(ours) + '</span>');
+  t = t.replace(/0x[0-9a-fA-F]{40}/g, function(m){
+    return '<span class="ca bad">' + short(m) + '</span>' });
+  t = t.replace(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, function(m){
+    return '<span class="ca bad">' + m.slice(0,8) + '…' + m.slice(-4) + '</span>' });
+  t = t.replace(/https?:\/\/t\.co\/\w+/g, '');
+  return t.trim();
+}
+
+function ago(ts){
+  var s = Math.max(0, Math.floor(Date.now()/1000) - ts);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+function avatar(p){
+  if (p.avatar) return '<img class="av" src="' + esc(p.avatar) + '" alt="" ' +
+    'onerror="this.replaceWith(mono(\'' + esc(p.author || '?') + '\'))">';
+  return '<span class="av mono">' + esc((p.author || '?').slice(0,2).toUpperCase()) + '</span>';
+}
+function mono(h){
+  var s = document.createElement('span');
+  s.className = 'av mono'; s.textContent = (h || '?').slice(0,2).toUpperCase();
+  return s;
+}
+
+function postCard(p, fresh){
+  var el = document.createElement('a');
+  el.className = 'post ' + (p.matched ? 'hit' : 'miss') + (fresh ? ' fresh' : '');
+  el.dataset.k = p.matched ? 'hit' : 'miss';
+  if (p.url) { el.href = p.url; el.target = '_blank'; el.rel = 'noopener noreferrer' }
+  var verdict = p.matched
+    ? '✓ counted · ' + (p.matched === 'address' ? 'carries the contract'
+                                                         : 'ticker + chain marker')
+    : '× not counted · ' + esc(p.why || 'does not name the token');
+  el.innerHTML =
+    '<div class="pmeta">' + avatar(p) +
+      '<span class="who"><span class="nm">' + esc(p.name || p.author) + '</span>' +
+      '<span class="hd">@' + esc(p.author) + '</span></span>' +
+      '<span class="t">' + ago(p.created_at) + '<br>' +
+        '+' + p.age_min + 'm after launch</span></div>' +
+    '<div class="ptxt">' + mark(p.text, p.address) + '</div>' +
+    '<div class="verdict' + (p.matched ? '' : ' off') + '">' +
+      '<span class="badge">$' + esc(p.symbol) + '</span>' + verdict + '</div>';
+  return el;
+}
+
+function drawTokens(d){
+  var order = { SPIKE:0, WARM:1, QUIET:2, WARMING:3 };
+  var toks = d.tokens.slice().sort(function(a,b){
+    var s = order[a.now.state] - order[b.now.state];
+    return s || (b.now.rate - a.now.rate) || (b.counted - a.counted);
+  });
+  var box = $('toks'); box.innerHTML = '';
+  var peak = Math.max(1, Math.max.apply(null, toks.map(function(t){ return t.now.rate })));
+  toks.forEach(function(t){
+    var col = t.now.state === 'SPIKE' ? 'var(--red)'
+            : t.now.state === 'WARM'  ? 'var(--lime)'
+            : t.now.state === 'QUIET' ? 'var(--steel)' : 'var(--rule2)';
+    var el = document.createElement('div');
+    el.className = 'tok ' + t.now.state;
+    el.innerHTML =
+      '<div class="r1"><span class="sym">$' + esc(t.symbol) + '</span>' +
+        '<span class="ad">' + t.address.slice(0,10) + '…</span>' +
+        '<span class="st ' + t.now.state + '">' + t.now.state.toLowerCase() + '</span></div>' +
+      '<div class="r2">' +
+        '<span><b class="n">' + t.now.rate + '</b> this window</span>' +
+        '<span><b class="n">' + (t.now.baseline_kind
+            ? t.now.multiplier.toFixed(1) + '×' : '—') + '</b> vs normal</span>' +
+        '<span><b class="n">' + t.counted + '</b>/' + t.paid + ' counted</span>' +
+      '</div>' +
+      '<div class="bar"><i style="width:' + Math.min(100, t.now.rate / peak * 100) +
+        '%;background:' + col + '"></i></div>';
+    box.appendChild(el);
+  });
+  $('wCount').textContent = toks.length + ' tokens';
+}
+
+function drawFeed(d){
+  var box = $('feed');
+  var rows = d.posts.filter(function(p){
+    return filter === 'all' || (filter === 'hit') === !!p.matched;
+  });
+  box.innerHTML = '';
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty">nothing here yet</div>';
+    return;
+  }
+  rows.forEach(function(p){
+    var fresh = !first && !seen[p.post_id];
+    box.appendChild(postCard(p, fresh));
+  });
+  d.posts.forEach(function(p){ seen[p.post_id] = true });
+  var hit = d.posts.filter(function(p){ return p.matched }).length;
+  $('fMeta').textContent = d.posts.length + ' newest · ' + hit + ' counted · ' +
+    (d.posts.length - hit) + ' refused';
+}
+
+function drawHealth(d){
+  var h = d.health, t = d.totals;
+  $('cHeld').innerHTML = '<b>' + t.paid + '</b> posts held · <b>' + t.counted + '</b> counted';
+  $('cSpend').innerHTML = '<b>$' + t.spend_usd.toFixed(4) + '</b> spent · ' +
+    t.requests + ' calls';
+  var chip = $('cHealth'), mark = $('mark');
+  if (h.running) {
+    chip.className = 'chip on';
+    chip.innerHTML = 'collector live · read <b>' + h.seconds_ago + 's</b> ago';
+    mark.className = 'mark';
+    $('warn').innerHTML = '';
+  } else {
+    chip.className = 'chip bad';
+    chip.innerHTML = h.last_read_ts
+      ? 'collector idle · <b>' + ago(h.last_read_ts) + '</b>'
+      : 'collector never ran';
+    mark.className = 'mark stale';
+    $('warn').innerHTML = '<div class="warn"><b>The collector is not running.</b> ' +
+      'Everything below is the last thing it read' +
+      (h.last_read_ts ? ', ' + ago(h.last_read_ts) : '') +
+      '. Start it in another terminal: <code>python3 -m trace.collector</code></div>';
+  }
+}
+
+function render(d){
+  DATA = d;
+  drawHealth(d); drawTokens(d); drawFeed(d);
+  first = false;
+}
+
+function poll(){
+  fetch('/api/live.json', { cache: 'no-store' })
+    .then(function(r){ return r.json() })
+    .then(function(d){
+      if (d.error) throw new Error(d.error);
+      render(d);
+    })
+    .catch(function(e){
+      $('cHealth').className = 'chip bad';
+      $('cHealth').textContent = 'server unreachable';
+      $('mark').className = 'mark stale';
+    })
+    .then(function(){ nextAt = Date.now() + POLL_MS });
+}
+
+$('filters').addEventListener('click', function(e){
+  var b = e.target.closest('.f'); if (!b) return;
+  filter = b.dataset.f;
+  [].forEach.call(this.querySelectorAll('.f'), function(x){
+    x.setAttribute('aria-pressed', x === b ? 'true' : 'false') });
+  if (DATA) drawFeed(DATA);
+});
+
+setInterval(function(){
+  var left = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
+  $('cNext').innerHTML = 'refresh in <b>' + left + 's</b>';
+  if (DATA) [].forEach.call(document.querySelectorAll('.post .t'), function(el, i){
+    var p = DATA.posts.filter(function(q){
+      return filter === 'all' || (filter === 'hit') === !!q.matched })[i];
+    if (p) el.innerHTML = ago(p.created_at) + '<br>+' + p.age_min + 'm after launch';
+  });
+}, 1000);
+
+nextAt = Date.now() + POLL_MS;
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

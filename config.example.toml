@@ -1,0 +1,135 @@
+# TRACE config. Copy to config.toml and edit. config.toml is gitignored.
+
+[chain]
+rpc_url    = "https://rpc.mainnet.chain.robinhood.com"
+chain_id   = 4663
+# Pons v2 factory. Emits TokenCreated as topic0 0x8d4aad49...
+factory    = "0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e"
+timeout_s  = 20
+# Max blocks per eth_getLogs page. The node caps a response at 10 000 logs and
+# the scanner halves the range on its own when it hits that, so this is only a
+# starting guess.
+log_page_blocks = 50000
+
+[watchlist]
+# Hard cap on tokens polled on X. Pins count against it: the bill is per token
+# either way. Do not raise until a week of real bills is on the table.
+max_tokens = 10
+
+# Always watched, whatever the traction. Addresses, checksummed or not.
+pinned_tokens = []
+
+# --- discovery -------------------------------------------------------------
+# How far back to read factory launches. This chain launches 17-35k tokens a
+# day, so 72h of launches is ~100k candidates and useless as a selector; we
+# scan a short window and rank what is inside it by traction instead.
+discovery_window_min = 120
+# A token needs to exist this long before it can be scored - a token 30s old
+# has no traction to measure yet.
+min_age_min = 10
+# Hard eviction. Matches the spec's 72h ceiling.
+max_age_hours = 72
+
+# --- traction --------------------------------------------------------------
+# Window over which transfers and unique receivers are counted.
+traction_window_min = 15
+# Thresholds to ENTER the watchlist.
+enter_min_transfers = 25
+enter_min_holders   = 12
+# Thresholds to STAY once in it. Lower than entry on purpose: the detector
+# needs 20 minutes of warm-up and an hour for a baseline, so a token that is
+# already collecting must not be evicted over noise.
+stay_min_transfers  = 5
+stay_min_holders    = 3
+# A new candidate may displace the weakest incumbent only if it scores this
+# many times higher AND the incumbent is below entry level. Stops the list
+# from churning while still letting a genuinely hot token in.
+displace_factor = 2.0
+
+# A ticker that is not usable in an X query is not worth paying for.
+ticker_min_len = 2
+ticker_max_len = 15
+
+[detector]
+# Same shape for every token. No per-token tuning, ever.
+rate_window_min   = 5     # "rate" is mentions in the last 5 minutes
+# The 30 minutes behind the rated window. This number is published on the site
+# and asserted by the replay tests: change it here and the collector starts
+# using a rule the tests never checked and the site does not describe.
+baseline_windows  = 6
+# Below this a token cannot fire, whatever the ratio says. It is what stops
+# "1 post became 4 posts, 4x!!".
+#
+# 8 was a guess, written before any live data existed. Measured over a day of
+# real launches, the busiest five-minute window on any watched token held 14
+# posts and the next busiest held 6 - a floor of 8 admitted one event and
+# refused the other, and nothing in the data justified the gap. At 5 both are
+# admitted and no window of noise comes close. Sample is one day and seven
+# tokens: re-run --calibrate as more accumulates.
+floor             = 5
+# No warm_up setting. Warm-up is not a separate number to tune - it is what
+# baseline_windows already implies: a token cannot be rated until those six
+# windows have been fully observed, i.e. 35 minutes after admission. A second
+# knob for the same rule is a second place for it to disagree with itself.
+cooldown_min      = 30    # after a SPIKE. One moment must not become forty.
+warm_multiplier   = 1.5
+spike_multiplier  = 3.0
+# Baseline over a partially collected hour is the mean of the windows we
+# actually covered. Windows from before collection started are not counted as
+# zero - that would deflate the baseline and fire on the warm-up boundary.
+min_baseline      = 1.0   # multiplier = rate / max(baseline, min_baseline)
+
+[x]
+# Which paid feed to read.
+#   "twitterapi.io"  third party, $0.15 per 1 000 posts   <- default
+#   "x"              official X API, $5.00 per 1 000 posts
+# Thirty-three times apart. The detector cannot tell which one paid.
+provider = "twitterapi.io"
+
+# The key. TRACE_X_BEARER in the environment wins over this line - prefer it,
+# so the key never sits in a file at all.
+api_key  = ""
+
+# twitterapi.io only. "Latest" is the only correct answer for this project:
+# "Top" is ranked by engagement, and a ranking is exactly the judgement TRACE
+# refuses to make.
+query_type = "Latest"
+
+# --- schedule --------------------------------------------------------------
+# 0 means "wake just after each detector window closes". Polling faster buys
+# nothing — the detector only ever rates a window that has already closed — and
+# every call costs at least 15 credits even when it returns nothing. Ten tokens
+# every minute is $2.16 a day before anyone has posted a word; the same ten
+# once per window is $0.43.
+poll_interval_s = 0
+poll_delay_s    = 20    # grace after the boundary, for indexing lag
+overlap_s       = 30    # re-ask slightly behind the last poll, so nothing is
+                        # lost at the seam. Duplicates die on post_id.
+
+# How far back to read the FIRST time a token is polled.
+#
+# A token joins the watchlist because it is already getting traction — so the
+# burst is happening at that moment, and the detector needs 35 minutes of
+# baseline before it may say anything. Measured on live data: one token's
+# entire event was 13, 11 and 14 posts in three consecutive windows, all of it
+# inside the warm-up, and the detector was still silent when it ended.
+#
+# One historical read at admission buys the baseline outright. It is not a
+# fudge — we ask the feed about those windows and it answers, so they are
+# observed, merely observed late. Costs about two cents per token, once.
+backfill_min    = 60
+
+# --- money -----------------------------------------------------------------
+# Hard stop, not a throttle. When the next request could cross this line the
+# collector exits. It never polls less often or shortens pages instead: a
+# detector fed a thinned stream reports QUIET for a token that is screaming.
+daily_budget_usd  = 1.00
+max_pages_per_poll = 10
+
+# Exclude posts containing links. Off: no provider charges more to read one,
+# and most organic posts about a fresh contract carry a screener link. The
+# $0.20 link price everyone quotes is for WRITING a post with a URL.
+exclude_links = false
+
+[storage]
+db_path = "trace.db"

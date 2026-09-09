@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TRACE — your book</title>
+<!--
+  Stage 6, the wallet half. This file is the whole thing.
+
+  It talks to a public Robinhood Chain RPC from your browser and nowhere else.
+  There is no build step, no server, no bundler and no dependency: open the file
+  and it runs. Read it before you paste an address into it — that is the point
+  of it being one file.
+
+  What it never does, enforced below rather than promised:
+    - it never sends, signs or builds a transaction. See ALLOWED.
+    - it never posts your address anywhere except the RPC endpoint in the box,
+      which you can change to your own node.
+    - it stores nothing. Reload and it has forgotten you.
+-->
+<style>
+:root{
+  --bg:#07080A;--panel:#0B0D11;--panel2:#0F1218;--rule:#181C24;--rule2:#252B36;
+  --txt:#E9E7E0;--dim:#7C838F;--dim2:#4C525E;
+  --lime:#DBFD52;--red:#FF5A3C;--up:#5FD08A;--down:#E0604A;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--mono);font-size:14px;
+  line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px}
+.n{font-variant-numeric:tabular-nums}
+a{color:var(--lime)}
+
+.rail{border-bottom:1px solid var(--rule);background:var(--panel);position:sticky;top:0;z-index:5}
+.rail .in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:20px;
+  flex-wrap:wrap;font-size:11.5px;color:var(--dim2);letter-spacing:.1em;text-transform:uppercase}
+.logo{font-weight:800;font-size:16px;letter-spacing:.26em;color:var(--txt)}
+.logo b{color:var(--lime);font-weight:800}
+.rail b{color:var(--dim);font-weight:500}
+.rail .r{margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim2);display:inline-block;margin-right:6px}
+.dot.on{background:var(--up);box-shadow:0 0 7px var(--up)}
+.dot.err{background:var(--red);box-shadow:0 0 7px var(--red)}
+
+h1{font-size:22px;letter-spacing:-.01em;margin:36px 0 8px;font-weight:600}
+.sub{color:var(--dim);margin:0 0 26px;max-width:74ch;font-size:13.5px}
+.sub b{color:var(--txt);font-weight:500}
+
+.panel{border:1px solid var(--rule);background:var(--panel);border-radius:3px;overflow:hidden;
+  margin-bottom:18px}
+.ph{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);flex-wrap:wrap}
+.ph b{color:var(--txt);font-weight:600}
+.ph .r{margin-left:auto}
+
+.form{padding:16px;display:grid;grid-template-columns:1fr 150px;gap:10px}
+.form input{background:var(--panel2);border:1px solid var(--rule2);border-radius:2px;padding:11px 13px;
+  color:var(--txt);font:inherit;font-size:13px;min-width:0}
+.form input:focus{outline:none;border-color:var(--lime)}
+.form input::placeholder{color:var(--dim2)}
+.form .adv{grid-column:1/-1;display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:center}
+.form label{grid-column:1/-1;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim2);margin-top:4px}
+button{font:inherit;cursor:pointer}
+.go{background:var(--lime);border:1px solid var(--lime);color:#0A0A0A;font-weight:600;font-size:11.5px;
+  letter-spacing:.13em;text-transform:uppercase;border-radius:2px;padding:11px 16px}
+.go:disabled{opacity:.45;cursor:default}
+.ghost{background:none;border:1px solid var(--rule2);color:var(--dim);font-size:11.5px;
+  letter-spacing:.13em;text-transform:uppercase;border-radius:2px;padding:11px 16px}
+.ghost:hover{border-color:var(--lime);color:var(--lime)}
+
+.prog{height:2px;background:var(--rule);position:relative;overflow:hidden}
+.prog i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--lime);transition:width .25s}
+.log{padding:12px 16px;font-size:12px;color:var(--dim2);max-height:150px;overflow:auto;white-space:pre-wrap;
+  border-top:1px solid var(--rule);background:var(--panel2)}
+.log .e{color:var(--red)}
+.log .k{color:var(--lime)}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.stats div{padding:16px 18px;border-right:1px solid var(--rule)}
+.stats div:last-child{border-right:0}
+.stats .k{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
+.stats .v{font-size:24px;font-weight:600;margin-top:6px;letter-spacing:-.01em}
+
+.thead,.trow{display:grid;grid-template-columns:1fr 118px 104px 104px 128px;gap:12px;padding:11px 16px;
+  border-bottom:1px solid var(--rule);align-items:center;font-size:13px}
+.thead{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2);background:var(--panel2)}
+.trow:last-child{border-bottom:0}
+.trow:hover{background:var(--panel2)}
+.sym{font-weight:600;font-size:14px}
+.addr{color:var(--dim2);font-size:11px;margin-top:2px;word-break:break-all}
+.num{text-align:right;color:var(--dim)}
+.num b{color:var(--txt);font-weight:500}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.empty{padding:34px 16px;text-align:center;color:var(--dim2);font-size:13px}
+
+.note{color:var(--dim);font-size:12.5px;margin:14px 0 0;max-width:80ch}
+.note b{color:var(--txt);font-weight:500}
+.warn{border-left:2px solid var(--lime);padding-left:14px;margin:22px 0}
+@media(max-width:760px){
+  .form,.form .adv{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .thead,.trow{grid-template-columns:1fr 92px 104px}
+  .thead .c4,.thead .c5,.trow .c4,.trow .c5{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="rail"><div class="in">
+  <span class="logo">TRA<b>CE</b></span>
+  <span>book · stage 6</span>
+  <span class="r">
+    <span><i class="dot" id="d1"></i><span id="conn">not connected</span></span>
+    <span>chain <b id="cid">—</b></span>
+    <span>block <b class="n" id="blk">—</b></span>
+    <span>rtt <b class="n" id="rtt">—</b></span>
+  </span>
+</div></div>
+
+<div class="wrap">
+  <h1>Your book, read straight off the chain.</h1>
+  <p class="sub">Paste an address. This page calls a public Robinhood Chain node from
+    <b>your</b> browser, walks the ERC-20 Transfer log for that address, and tells you what it
+    actually holds and what it actually moved. <b>Nothing is sent anywhere else and nothing is
+    stored.</b> Reload and it has forgotten you.</p>
+
+  <div class="panel">
+    <div class="ph"><b>Read an address</b><span class="r" id="mode">read only · no signer</span></div>
+    <div class="form">
+      <input id="addr" placeholder="0x… any address on Robinhood Chain" spellcheck="false"
+             autocomplete="off">
+      <button class="go" id="go">Read it</button>
+      <label>Endpoint and depth — change either if you want</label>
+      <div class="adv">
+        <input id="rpc" value="https://rpc.mainnet.chain.robinhood.com" spellcheck="false">
+        <input id="depth" value="250000" inputmode="numeric" title="how many blocks back to walk">
+      </div>
+    </div>
+    <div class="prog"><i id="bar"></i></div>
+    <div class="log" id="log">idle. press “read it”, or just hit connect by leaving the address empty.</div>
+  </div>
+
+  <div class="panel" id="sumpanel" hidden>
+    <div class="ph"><b>Summary</b><span class="r" id="sumrange"></span></div>
+    <div class="stats">
+      <div><div class="k">Native balance</div><div class="v n" id="s1">—</div></div>
+      <div><div class="k">Transactions sent</div><div class="v n" id="s2">—</div></div>
+      <div><div class="k">Tokens touched</div><div class="v n" id="s3">—</div></div>
+      <div><div class="k">Transfer events</div><div class="v n" id="s4">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="tokpanel" hidden>
+    <div class="ph"><b>Tokens</b><span>current balance and what moved through</span></div>
+    <div class="thead">
+      <span>Token</span>
+      <span class="num" style="text-align:right">Balance now</span>
+      <span class="num" style="text-align:right">In</span>
+      <span class="num c4" style="text-align:right">Out</span>
+      <span class="num c5" style="text-align:right">Transfers</span>
+    </div>
+    <div id="rows"><div class="empty">Nothing read yet.</div></div>
+  </div>
+
+  <div class="warn">
+    <p class="note"><b>What this does not do yet.</b> It reads balances and the Transfer log. It does
+      not yet price anything, so it cannot tell you profit and loss in ETH — that needs the swap
+      decoding and the opening-tax read, which is the rest of stage 6. It shows what it can compute
+      and stays quiet about the rest, rather than inventing a number.</p>
+    <p class="note"><b>Why the depth box.</b> A full history scan of a chain at 58 million blocks is
+      not something a browser should attempt. The default walks the last 250 000 blocks and splits
+      the range whenever the node refuses it. Raise it and it takes longer; lower it and you see
+      less.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* Hard constraint 1, as code rather than a promise: this client will not call
+   anything that can change state. Anything not on this list is refused before
+   it reaches the network. */
+var ALLOWED = ["eth_chainId","eth_blockNumber","eth_getBalance","eth_getTransactionCount",
+               "eth_getLogs","eth_call","net_version"];
+
+var TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+var $ = function(id){ return document.getElementById(id); };
+var rpcUrl = "", rtt = 0, idc = 1;
+
+function log(msg, cls){
+  var el = $("log");
+  el.innerHTML += "\n" + (cls ? '<span class="'+cls+'">'+msg+"</span>" : msg);
+  el.scrollTop = el.scrollHeight;
+}
+function bar(pct){ $("bar").style.width = Math.max(0, Math.min(100, pct)) + "%"; }
+
+async function rpc(method, params){
+  if (ALLOWED.indexOf(method) === -1) throw new Error("refused: " + method + " is not read-only");
+  var t0 = performance.now();
+  var res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: {"content-type": "application/json"},
+    body: JSON.stringify({jsonrpc:"2.0", id: idc++, method: method, params: params || []})
+  });
+  rtt = Math.round(performance.now() - t0);
+  if (!res.ok) throw new Error("http " + res.status);
+  var j = await res.json();
+  if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+  return j.result;
+}
+
+async function batch(calls){
+  var body = calls.map(function(c){
+    if (ALLOWED.indexOf(c[0]) === -1) throw new Error("refused: " + c[0]);
+    return {jsonrpc:"2.0", id: idc++, method: c[0], params: c[1] || []};
+  });
+  var res = await fetch(rpcUrl, {method:"POST", headers:{"content-type":"application/json"},
+                                 body: JSON.stringify(body)});
+  if (!res.ok) throw new Error("http " + res.status);
+  var j = await res.json();
+  if (!Array.isArray(j)) throw new Error("node did not answer a batch");
+  j.sort(function(a,b){ return a.id - b.id; });
+  return j.map(function(r){ return r.error ? null : r.result; });
+}
+
+/* ---- tiny abi helpers, hand rolled so there is no dependency ---- */
+function hex(n){ return "0x" + n.toString(16); }
+function pad32(a){ return "000000000000000000000000" + a.toLowerCase().replace(/^0x/,""); }
+function topicAddr(a){ return "0x" + pad32(a); }
+function fromTopicAddr(t){ return "0x" + t.slice(26).toLowerCase(); }
+function big(hexstr){ return BigInt(hexstr && hexstr !== "0x" ? hexstr : "0x0"); }
+
+function decodeString(res){
+  if (!res || res === "0x") return null;
+  var body = res.slice(2);
+  /* dynamic string: offset, length, bytes */
+  if (body.length >= 128) {
+    var len = parseInt(body.slice(64,128), 16);
+    if (len > 0 && len <= 64 && body.length >= 128 + len*2) {
+      var s = hexToUtf8(body.slice(128, 128 + len*2));
+      if (s) return s;
+    }
+  }
+  /* old bytes32 style */
+  var s2 = hexToUtf8(body.slice(0,64));
+  return s2 || null;
+}
+function hexToUtf8(h){
+  var out = "";
+  for (var i = 0; i < h.length; i += 2) {
+    var c = parseInt(h.substr(i,2), 16);
+    if (c === 0) continue;
+    if (c < 32 || c > 126) return out.trim() || null;
+    out += String.fromCharCode(c);
+  }
+  return out.trim() || null;
+}
+function fmtUnits(v, dec){
+  if (v === 0n) return "0";
+  var neg = v < 0n; if (neg) v = -v;
+  var d = BigInt(10) ** BigInt(dec);
+  var whole = v / d, frac = v % d;
+  var fs = frac.toString().padStart(dec, "0").slice(0, 4).replace(/0+$/,"");
+  var ws = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return (neg?"−":"") + ws + (fs ? "." + fs : "");
+}
+
+/* ---- getLogs with range splitting, same idea as trace/rpc.py ---- */
+async function getLogsSplit(from, to, topics, onProgress, span){
+  var out = [], stack = [[from, to]], total = to - from + 1, done = 0, guard = 0;
+  while (stack.length) {
+    if (++guard > 4000) { log("gave up splitting after 4000 ranges", "e"); break; }
+    var r = stack.pop(), a = r[0], b = r[1];
+    try {
+      var logs = await rpc("eth_getLogs", [{fromBlock: hex(a), toBlock: hex(b), topics: topics}]);
+      if (logs.length >= 9500 && b > a) {          /* almost certainly truncated */
+        var mid = Math.floor((a + b) / 2);
+        stack.push([mid + 1, b]); stack.push([a, mid]);
+        continue;
+      }
+      out = out.concat(logs);
+      done += (b - a + 1);
+      if (onProgress) onProgress(done / total);
+    } catch (e) {
+      if (b > a) {
+        var m = Math.floor((a + b) / 2);
+        stack.push([m + 1, b]); stack.push([a, m]);
+      } else {
+        log("block " + a + " refused: " + e.message, "e");
+        done += 1;
+      }
+    }
+  }
+  return out;
+}
+
+async function connect(){
+  rpcUrl = $("rpc").value.trim();
+  $("d1").className = "dot";
+  $("conn").textContent = "connecting";
+  var r = await batch([["eth_chainId"], ["eth_blockNumber"]]);
+  var cid = parseInt(r[0], 16), blk = parseInt(r[1], 16);
+  $("cid").textContent = cid;
+  $("blk").textContent = blk.toLocaleString("en-US").replace(/,/g, " ");
+  $("rtt").textContent = rtt + " ms";
+  $("d1").className = "dot on";
+  $("conn").textContent = "connected";
+  return {cid: cid, blk: blk};
+}
+
+async function run(){
+  var addr = $("addr").value.trim().toLowerCase();
+  $("go").disabled = true;
+  $("log").textContent = "";
+  bar(0);
+  try {
+    var head = await connect();
+    log("chain " + head.cid + " · head " + head.blk + " · " + rtt + " ms", "k");
+    if (head.cid !== 4663) log("warning: this is not chain 4663", "e");
+
+    if (!/^0x[0-9a-f]{40}$/.test(addr)) {
+      log("no address given — connection test only. paste an address to read a book.");
+      $("go").disabled = false; bar(100); return;
+    }
+
+    var depth = Math.max(1000, parseInt($("depth").value, 10) || 250000);
+    var from = Math.max(0, head.blk - depth);
+    log("walking blocks " + from + " → " + head.blk + " (" + depth.toLocaleString("en-US") + ")");
+
+    var base = await batch([["eth_getBalance",[addr,"latest"]],
+                            ["eth_getTransactionCount",[addr,"latest"]]]);
+    var bal = big(base[0]), nonce = parseInt(base[1], 16);
+
+    var t = topicAddr(addr);
+    log("reading incoming transfers…");
+    var inc = await getLogsSplit(from, head.blk, [TRANSFER, null, t],
+                                 function(p){ bar(p * 45); });
+    log("  " + inc.length + " in");
+    log("reading outgoing transfers…");
+    var outg = await getLogsSplit(from, head.blk, [TRANSFER, t, null],
+                                  function(p){ bar(45 + p * 45); });
+    log("  " + outg.length + " out");
+
+    var tok = {};
+    function touch(c){ if(!tok[c]) tok[c] = {addr:c, in:0n, out:0n, n:0}; return tok[c]; }
+    inc.forEach(function(l){ var e = touch(l.address.toLowerCase());
+                             e.in += big(l.data); e.n++; });
+    outg.forEach(function(l){ var e = touch(l.address.toLowerCase());
+                              e.out += big(l.data); e.n++; });
+
+    var list = Object.keys(tok);
+    log("resolving " + list.length + " token contracts…");
+    var meta = [];
+    for (var i = 0; i < list.length; i += 25) {
+      var slice = list.slice(i, i + 25), calls = [];
+      slice.forEach(function(c){
+        calls.push(["eth_call", [{to:c, data:"0x95d89b41"}, "latest"]]);           /* symbol()   */
+        calls.push(["eth_call", [{to:c, data:"0x313ce567"}, "latest"]]);           /* decimals() */
+        calls.push(["eth_call", [{to:c, data:"0x70a08231" + pad32(addr)}, "latest"]]); /* balanceOf */
+      });
+      var res = await batch(calls);
+      slice.forEach(function(c, k){
+        var e = tok[c];
+        e.sym = decodeString(res[k*3]) || c.slice(0,8) + "…";
+        e.dec = res[k*3+1] ? parseInt(res[k*3+1], 16) : 18;
+        if (!(e.dec >= 0 && e.dec <= 36)) e.dec = 18;
+        e.bal = big(res[k*3+2]);
+        meta.push(e);
+      });
+      bar(90 + (i / Math.max(1, list.length)) * 10);
+    }
+
+    meta.sort(function(a,b){ return b.n - a.n; });
+
+    $("s1").textContent = fmtUnits(bal, 18) + " ETH";
+    $("s2").textContent = nonce.toLocaleString("en-US");
+    $("s3").textContent = meta.length.toLocaleString("en-US");
+    $("s4").textContent = (inc.length + outg.length).toLocaleString("en-US");
+    $("sumrange").textContent = "blocks " + from.toLocaleString("en-US") + " → "
+                              + head.blk.toLocaleString("en-US");
+    $("sumpanel").hidden = false;
+
+    $("rows").innerHTML = meta.length ? meta.map(function(e){
+      return '<div class="trow">'
+        + '<div><div class="sym">' + esc(e.sym) + '</div><div class="addr">' + e.addr + '</div></div>'
+        + '<div class="num n"><b>' + fmtUnits(e.bal, e.dec) + '</b></div>'
+        + '<div class="num n pos">' + fmtUnits(e.in, e.dec) + '</div>'
+        + '<div class="num n neg c4">' + fmtUnits(e.out, e.dec) + '</div>'
+        + '<div class="num n c5">' + e.n + '</div>'
+        + '</div>';
+    }).join("") : '<div class="empty">No ERC-20 transfers in that block range.</div>';
+    $("tokpanel").hidden = false;
+
+    bar(100);
+    log("done. " + meta.length + " tokens, " + (inc.length + outg.length) + " transfer events.", "k");
+  } catch (e) {
+    $("d1").className = "dot err";
+    $("conn").textContent = "failed";
+    log("error: " + e.message, "e");
+  }
+  $("go").disabled = false;
+}
+
+function esc(s){ return String(s).replace(/[<>&"]/g, function(c){
+  return ({"<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;"})[c]; }); }
+
+$("go").addEventListener("click", run);
+$("addr").addEventListener("keydown", function(e){ if (e.key === "Enter") run(); });
+
+/* connect on load so the rail tells the truth immediately */
+$("rpc").value = $("rpc").value.trim();
+rpcUrl = $("rpc").value;
+connect().then(function(h){
+  log("connected to chain " + h.cid + " at block " + h.blk + " · " + rtt + " ms", "k");
+}).catch(function(e){
+  $("d1").className = "dot err"; $("conn").textContent = "failed";
+  log("could not reach the node: " + e.message, "e");
+  log("if you are opening this from a file:// path, some nodes refuse the request.");
+  log("run  python3 -m http.server 8080  in the repo and open http://localhost:8080/web/book.html");
+});
+</script>
+</body>
+</html>
