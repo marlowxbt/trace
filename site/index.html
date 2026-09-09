@@ -1559,15 +1559,17 @@ var CAL = (function(){
         var msg = String(e && e.message || e);
         var reachable = !/failed to fetch|networkerror|load failed/i.test(msg);
         if(!reachable){
-          /* the node, not the range. Same range again, once, after a breath. */
-          var key = a+':'+b;
-          if(!retried[key]){ retried[key]=1; await sleep(700); stack.push([a,b]); continue }
-          st.partial = true; done+=(b-a+1); continue;
+          /* the node, not the range. A rate limit is a moment, not a verdict,
+             so back off and ask for the same range again before giving up. */
+          var key = a+':'+b, n = retried[key] || 0;
+          if(n < 2){ retried[key] = n+1; st.blocked++;
+                     await sleep(600 + n*1400); stack.push([a,b]); continue }
+          st.partial = true; st.unread += (b-a+1); done+=(b-a+1); continue;
         }
         if(b > a && TOO_MANY.test(msg)){
           var m2=(a+b)>>1; stack.push([m2+1,b]); stack.push([a,m2]);
         } else {
-          st.partial = true; done+=(b-a+1);
+          st.partial = true; st.unread += (b-a+1); done+=(b-a+1);
         }
       }
     }
@@ -1601,15 +1603,25 @@ var CAL = (function(){
           +(head-from).toLocaleString('en-US')+' blocks at '
           +secPerBlock.toFixed(2)+'s each.');
 
-      var t = pad(addr), st = {partial:false, covered:0};
+      var t = pad(addr), st = {partial:false, covered:0, unread:0, blocked:0};
       var sent = await logs(from, head, [TRANSFER, t, null], function(f){ pct(0.1+0.35*f) }, st);
       var recv = await logs(from, head, [TRANSFER, null, t], function(f){ pct(0.45+0.35*f) }, st);
       var all = sent.concat(recv);
 
       if(!all.length){
         pct(null); busy = false;
-        say('Nothing for <b>'+addr.slice(0,10)+'…'+addr.slice(-4)+'</b> in the last '+DAYS
-            +' days on this chain. The address is fine &mdash; there is just no traffic to read.');
+        /* Nothing found and nothing read are different answers, and only one
+           of them is a fact about the address. */
+        var span = (head - from) * 2;                  /* two passes over it */
+        if(st.partial || st.covered < span * 0.9){
+          say('Could not finish reading that address: the node stopped answering '
+              + 'part way through' + (st.blocked ? ' (it was rate-limiting us)' : '')
+              + '. Nothing was sent anywhere else &mdash; try again in a minute.', 'bad');
+        } else {
+          say('Nothing for <b>'+addr.slice(0,10)+'…'+addr.slice(-4)+'</b> in the last '+DAYS
+              +' days on this chain. The address is fine &mdash; there is just no traffic '
+              +'to read.');
+        }
         return;
       }
 
