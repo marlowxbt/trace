@@ -919,8 +919,14 @@ def main(argv: list[str] | None = None) -> int:
             sel, _ = _wl.refresh(cfg, conn, rpc)
             added = len(sel.by_action("add"))
             removed = len(sel.by_action("remove"))
-            return (f"watchlist: +{added} -{removed}"
-                    if (added or removed) else None)
+            if added or removed:
+                return f"watchlist: +{added} -{removed}"
+            # Saying nothing when nothing moved makes silence ambiguous: a
+            # watchlist that has not rotated in five hours looks exactly like a
+            # refresh that never ran, and the difference is money. So it says
+            # it looked.
+            held = len(_db.active_watchlist(conn))
+            return f"watchlist: re-checked, nothing moved ({held} held)"
         except Exception as e:                    # RPC is not the collector's job
             return f"watchlist refresh failed ({type(e).__name__}), keeping the old one"
 
