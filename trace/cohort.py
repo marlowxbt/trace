@@ -122,3 +122,78 @@ def build(conn: sqlite3.Connection, window_s: int = 300) -> Curve:
                 posts[b] = posts.get(b, 0) + counts.get(w, 0)
             w += window_s
     return Curve(posts=posts, windows=windows)
+
+
+def rows(curve: Curve) -> list[dict]:
+    """The curve as a table, oldest bucket last, every bucket present.
+
+    A bucket with too little behind it is in here with a null mean rather than
+    missing, because "we looked and there is not enough yet" and "we never
+    looked" are different answers and the table has to be able to say both.
+    """
+    return [{"label": label(b),
+             "lo_min": b[0] // 60,
+             "hi_min": None if b[1] > 100000 else b[1] // 60,
+             "windows": curve.windows.get(b, 0),
+             "posts": curve.posts.get(b, 0),
+             "normal": curve.mean(b)} for b in BUCKETS]
+
+
+def main(argv=None) -> int:
+    """`python -m trace.cohort` - what a token this age normally gets.
+
+    README, the Makefile and docs/ATTENTION.md have all told people to run this
+    since the first commit, and until now it printed nothing at all: the module
+    was a library with no way in. This is that way in.
+    """
+    import argparse
+    import json
+
+    from . import config as _config
+    from . import db as _db
+
+    ap = argparse.ArgumentParser(
+        description="the attention-by-age curve, rebuilt from the database")
+    ap.add_argument("--config", default=None)
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args(argv)
+
+    cfg = _config.load(args.config)
+    conn = _db.connect(cfg.db_file)
+    curve = build(conn, cfg.detector.rate_window_min * 60)
+    table = rows(curve)
+
+    if args.json:
+        print(json.dumps(table))
+        return 0
+
+    if not curve.total_windows:
+        print("No observed windows in %s yet, so there is no curve to draw.\n"
+              "Run the collector for a while first:\n"
+              "    python3 -m trace.collector" % cfg.db_file)
+        return 0
+
+    print("%d observed windows across %d buckets. A bucket says nothing until "
+          "%d windows\nare behind it - 'not measured' is an answer, and a "
+          "guess is not.\n" % (curve.total_windows,
+                               sum(1 for r in table if r["windows"]),
+                               MIN_WINDOWS))
+    print(f"{'age':>10}{'normal':>14}{'windows':>10}{'posts':>8}")
+    for r in table:
+        normal = ("%.2f" % r["normal"]) if r["normal"] is not None \
+            else ("not measured" if r["windows"] else "-")
+        print(f"{r['label']:>10}{normal:>14}{r['windows']:>10}{r['posts']:>8}")
+
+    seen = [r for r in table if r["normal"] is not None]
+    if len(seen) >= 2:
+        hi, lo = max(seen, key=lambda r: r["normal"]), min(seen, key=lambda r: r["normal"])
+        if lo["normal"] > 0:
+            print("\nLoudest bucket %s at %.2f, quietest %s at %.2f - "
+                  "a %.0f-fold fall." % (hi["label"], hi["normal"],
+                                         lo["label"], lo["normal"],
+                                         hi["normal"] / lo["normal"]))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

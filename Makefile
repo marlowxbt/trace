@@ -5,7 +5,7 @@ PY ?= python3
 help:
 	@echo "TRACE - read-only terminal for Robinhood Chain"
 	@echo
-	@echo "  make test        142 offline tests. No network, no key, no cost."
+	@echo "  make test        162 offline tests. No network, no key, no cost."
 	@echo "  make guard       prove no signing or broadcasting call exists"
 	@echo "  make watchlist   pick the ten tokens worth paying for"
 	@echo "  make dry         every query and the exact bill, without a request"

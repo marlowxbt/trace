@@ -110,7 +110,7 @@ shadows the standard library's `trace` module while you are inside it.
 | `python -m trace.callers` | who keeps showing up, and how early |
 | `python -m trace.export --with-posts` | a public JSON snapshot |
 | `python -m trace.serve` | the live desk on `127.0.0.1:8080` |
-| `make test` | 142 offline tests, no network, no key, no cost |
+| `make test` | 162 offline tests, no network, no key, no cost |
 
 ---
 
