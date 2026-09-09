@@ -352,15 +352,24 @@ td.id{color:var(--txt)} td.r{text-align:right}
 @keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
 .day:hover{transform:translateY(-2px);border-color:var(--rule2)}
 .day .pl{font-size:11px;font-weight:500;font-variant-numeric:tabular-nums}
-.day.up{border-color:rgba(219,253,82,.35)} .day.up .pl{color:var(--lime)}
-.day.dn{border-color:rgba(255,90,60,.35)} .day.dn .pl{color:var(--red)}
+/* The fill carries the size of the day, so the month has a shape before a
+   single number is read. Set inline from the same value that prints. */
+.day.up{border-color:rgba(219,253,82,.4)} .day.up .pl{color:var(--lime)}
+.day.dn{border-color:rgba(255,90,60,.4)} .day.dn .pl{color:var(--red)}
+.day.big{border-width:1px}
+.day.up.big{border-color:rgba(219,253,82,.75);box-shadow:0 0 14px -4px rgba(219,253,82,.35)}
+.day.dn.big{border-color:rgba(255,90,60,.7)}
 .day.flat .pl{color:var(--dim2)}
 .day.off{opacity:.2}
 .calsum{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
 .calsum div{padding:12px 15px;border-right:1px solid var(--rule)}
 .calsum div:last-child{border-right:0}
 .calsum .k{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
-.calsum .v{font-family:var(--disp);font-weight:800;font-size:21px;margin-top:3px}
+/* "16 / 23" wrapped to two lines and pushed the summary row half again as
+   tall. It scales down instead. */
+.calsum .v{font-family:var(--disp);font-weight:800;font-size:clamp(15px,1.5vw,21px);
+  margin-top:3px;white-space:nowrap;letter-spacing:-.01em}
+.calsum div{padding:12px 13px;min-width:0}
 .addr{display:flex;gap:8px;margin:0 0 12px}
 .addr input{flex:1;min-width:0;background:var(--sunk);border:1px solid var(--rule2);
   border-radius:100px;padding:11px 17px;color:var(--txt);font:inherit;font-size:12.5px}
@@ -1378,14 +1387,24 @@ tabs.forEach(function(t){
 
 /* ---------- the trading calendar (example, and it says so) ---------- */
 (function(){
-  var days=[0,0,0.18,-0.31,0,0.42,0, 0,-0.12,0.55,0,0,0.09,-0.88,
-            0,0,0.24,0.31,-0.15,0,0, 0.62,0,-0.44,0,0.13,0,0, 0,0.27];
+  var days=[0.42, 0.71, 1.06,-0.34, 0,    0.88,-0.23,
+            0,   -0.59, 1.24, 0.47, 0,    0.55,-0.72,
+            0.31, 0,    1.43, 0.62,-0.38, 0,    0.34,
+            1.72, 0.64,-0.48, 0,    0.83, 0,    0.39,
+           -0.27, 1.11];
   var h='',traded=0,green=0,best=0,month=0;
+  var peak=Math.max.apply(null,days.map(Math.abs));
   for(var i=0;i<2;i++) h+='<div class="day off"></div>';
   days.forEach(function(v,i){
     var cls=v>0?'up':v<0?'dn':'flat';
     if(v!==0){traded++;month+=v;if(v>0){green++;best=Math.max(best,v)}}
-    h+='<div class="day '+cls+'" style="animation-delay:'+(i*13)+'ms" title="Day '+(i+1)+' · '
+    /* alpha from the size of the day, floored so a small day is still visible
+       and capped so a big one never swallows its own number */
+    var k=Math.abs(v)/peak;
+    var bg=v===0?'' : ';background:rgba('+(v>0?'219,253,82':'255,90,60')+','
+      +(0.05+0.17*k).toFixed(3)+')';
+    h+='<div class="day '+cls+(k>=.72&&v!==0?' big':'')
+      +'" style="animation-delay:'+(i*13)+'ms'+bg+'" title="Day '+(i+1)+' · '
       +(v?(v>0?'+':'')+v.toFixed(2)+' ETH closed':'no trades closed')+'">'
       +'<span>'+(i+1)+'</span><span class="pl">'+(v?(v>0?'+':'')+v.toFixed(2):'·')+'</span></div>';});
   $('cal').innerHTML=h;
