@@ -1040,16 +1040,24 @@ var RGB={SPIKE:[255,90,60],WARM:[219,253,82],QUIET:[95,139,150]};
     while(live.length>3) drop(live.shift());
   }
 
-  /* A number that changes by three should be seen changing. */
+  /* A number that changes by three should be seen changing - but the number
+     itself must not depend on being seen. A background tab runs no animation
+     frames, so the arrival is guaranteed by a timer and the animation only
+     makes the trip nicer when the tab is in front. */
   function count(el,to,dp,suf){
+    var text=function(){ return to.toFixed(dp)+(suf||'') };
     var from=parseFloat((el.textContent||'').replace(/[^0-9.]/g,''));
-    if(reduce||isNaN(from)||from===to){ el.textContent=to.toFixed(dp)+(suf||''); return }
-    var t0=null,dur=520;
+    if(reduce||isNaN(from)||from===to){ el.textContent=text(); return }
+    var dur=520, t0=null, landed=false;
+    var land=function(){ if(!landed){ landed=true; el.textContent=text() } };
+    setTimeout(land, dur+120);
     requestAnimationFrame(function f(t){
+      if(landed) return;
       if(!t0)t0=t;
       var k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+      if(k>=1){ land(); return }
       el.textContent=(from+(to-from)*e).toFixed(dp)+(suf||'');
-      if(k<1) requestAnimationFrame(f);
+      requestAnimationFrame(f);
     });
   }
   /* Text that is replaced, not counted, fades through instead of blinking. */
