@@ -1387,11 +1387,11 @@ tabs.forEach(function(t){
 
 /* ---------- the trading calendar (example, and it says so) ---------- */
 (function(){
-  var days=[0.42, 0.71, 1.06,-0.34, 0,    0.88,-0.23,
-            0,   -0.59, 1.24, 0.47, 0,    0.55,-0.72,
-            0.31, 0,    1.43, 0.62,-0.38, 0,    0.34,
-            1.72, 0.64,-0.48, 0,    0.83, 0,    0.39,
-           -0.27, 1.11];
+  var days=[1.05, 1.80, 2.64,-0.82, 0.61, 2.15,-0.55,
+            1.24,-1.42, 3.10, 1.18, 0,    1.36,-1.74,
+            0.78, 0.92, 3.55, 1.52,-0.91, 0,    0.86,
+            4.28, 1.60,-1.15, 0,    2.07, 0.74, 0.97,
+           -0.64, 2.76];
   var h='',traded=0,green=0,best=0,month=0;
   var peak=Math.max.apply(null,days.map(Math.abs));
   for(var i=0;i<2;i++) h+='<div class="day off"></div>';
@@ -1407,6 +1407,9 @@ tabs.forEach(function(t){
       +'" style="animation-delay:'+(i*13)+'ms'+bg+'" title="Day '+(i+1)+' · '
       +(v?(v>0?'+':'')+v.toFixed(2)+' ETH closed':'no trades closed')+'">'
       +'<span>'+(i+1)+'</span><span class="pl">'+(v?(v>0?'+':'')+v.toFixed(2):'·')+'</span></div>';});
+  /* close the rectangle: the two cells before the 1st are matched after the
+     30th, so the month ends on an edge rather than trailing off */
+  while((h.match(/class="day/g)||[]).length % 7) h+='<div class="day off"></div>';
   $('cal').innerHTML=h;
   $('cD').textContent=traded; $('cG').textContent=green+' / '+traded;
   $('cB').textContent='+'+best.toFixed(2);
