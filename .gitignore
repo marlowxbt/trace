@@ -37,3 +37,7 @@ seed_authors.py
 
 # the desktop app's staging folder for files sent to the chat
 Claude outputs/
+
+# a zip of the site is a build artifact, not source
+trace-site.zip
+*.zip

@@ -1,7 +1,18 @@
-<img src="assets/banner.svg" alt="TRACE — the room gets loud before the chart moves" width="100%">
+<p align="center">
+  <img src="assets/avatar.png" alt="TRACE" width="200">
+</p>
 
-<p>
-<img alt="tests" src="https://img.shields.io/badge/tests-142%20passing-DBFD52?style=flat-square&labelColor=0B0D11">
+<img src="assets/banner.png" alt="TRACE — attention before charts move" width="100%">
+
+<p align="center">
+<a href="https://trace-terminal.com">trace-terminal.com</a> &middot;
+<a href="docs/ATTENTION.md">the finding</a> &middot;
+<a href="docs/DETECTOR.md">how it decides</a> &middot;
+<a href="docs/SAFETY.md">what it refuses to do</a>
+</p>
+
+<p align="center">
+<img alt="tests" src="https://img.shields.io/badge/tests-162%20passing-DBFD52?style=flat-square&labelColor=0B0D11">
 <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-E9E7E0?style=flat-square&labelColor=0B0D11">
 <img alt="dependencies" src="https://img.shields.io/badge/runtime%20deps-1-E9E7E0?style=flat-square&labelColor=0B0D11">
 <img alt="chain" src="https://img.shields.io/badge/Robinhood%20Chain-4663-DBFD52?style=flat-square&labelColor=0B0D11">
